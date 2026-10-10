@@ -257,12 +257,11 @@
 }
 
 .scripture-quote figcaption {
-  margin-top: 0.2rem;
+  margin-top: 0.25rem;
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-style: normal;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
   color: #e4c56d;
 }
 
