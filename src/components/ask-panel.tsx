@@ -223,9 +223,9 @@ export function AskPanel({
   const showAsk = streaming || question.trim().length > 0;
 
   return (
-    <div className="chat-column mx-auto flex min-h-0 w-full flex-1 flex-col px-3">
+    <div className="chat-column flex min-h-0 w-full flex-col px-3">
       <div
-        className="min-h-0 flex-1 overflow-y-auto py-3"
+        className="chat-log min-h-0 overflow-y-auto"
         role="log"
         aria-label="Conversation"
         aria-busy={streaming}
