@@ -1,0 +1,43 @@
+import { MAX_QUESTION_LENGTH } from "./config";
+import { detectCrisis, type CrisisKind } from "./crisis";
+import {
+  INVALID_MESSAGE,
+  LIMIT_MESSAGE,
+  MISSING_KEY_MESSAGE,
+  UPSTREAM_MESSAGE,
+} from "./messages";
+
+export {
+  INVALID_MESSAGE,
+  LIMIT_MESSAGE,
+  MISSING_KEY_MESSAGE,
+  UPSTREAM_MESSAGE,
+};
+
+export type AskDecision =
+  | { type: "invalid" }
+  | { type: "crisis"; kind: CrisisKind }
+  | { type: "limit" }
+  | { type: "missing_key" }
+  | { type: "answer" };
+
+export function normalizeQuestion(input: unknown) {
+  if (typeof input !== "string") return null;
+  const question = input.trim();
+  if (question.length < 2 || question.length > MAX_QUESTION_LENGTH) return null;
+  return question;
+}
+
+export function decideAsk(input: {
+  question: string | null;
+  used: number;
+  limit: number;
+  hasKey: boolean;
+}): AskDecision {
+  if (!input.question) return { type: "invalid" };
+  const kind = detectCrisis(input.question);
+  if (kind) return { type: "crisis", kind };
+  if (input.used >= input.limit) return { type: "limit" };
+  if (!input.hasKey) return { type: "missing_key" };
+  return { type: "answer" };
+}
