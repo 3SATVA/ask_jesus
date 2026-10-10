@@ -8,13 +8,15 @@ function ArtPicture({
   className,
   alt,
   priority = false,
+  blur = false,
 }: {
   className: string;
   alt: string;
   priority?: boolean;
+  blur?: boolean;
 }) {
   return (
-    <picture className="block h-full w-full">
+    <picture className={blur ? "art-shift art-shift-blur" : "art-shift"}>
       <source type="image/avif" srcSet={srcSet("avif")} sizes="100vw" />
       <source type="image/webp" srcSet={srcSet("webp")} sizes="100vw" />
       <img
@@ -30,21 +32,16 @@ function ArtPicture({
   );
 }
 
-/** Full-bleed cover of the supplied portrait, with the figure kept whole on tall screens. */
+/** Portrait anchored so the crown of his head meets the top of the screen. */
 export function JesusScene() {
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[#16324a]">
-      <div className="absolute inset-0">
-        <ArtPicture
-          alt=""
-          className="h-full w-full scale-110 object-cover object-center blur-3xl"
-        />
-      </div>
       <div className="art-frame">
+        <ArtPicture blur alt="" className="art-photo" />
         <ArtPicture
           priority
           alt="Jesus with arms open, glowing in the clouds above the earth."
-          className="art-photo h-full w-full"
+          className="art-photo"
         />
       </div>
     </div>
