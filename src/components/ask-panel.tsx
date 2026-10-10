@@ -2,11 +2,9 @@
 
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import Link from "next/link";
-import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ReplyText } from "@/components/reply-text";
-import { ShareCard } from "@/components/share-card";
 import { LIMIT_MESSAGE } from "@/lib/messages";
 
 type AskError = "invalid" | "limit" | "missing_key" | "upstream" | "network";
@@ -66,7 +64,6 @@ export function AskPanel({
   const [error, setError] = useState("");
   const [remaining, setRemaining] = useState<number | null>(null);
   const [limit, setLimit] = useState(initialLimit);
-  const [shareOpen, setShareOpen] = useState(false);
   const [supportNote, setSupportNote] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -103,15 +100,6 @@ export function AskPanel({
   const atLimit = remaining === 0;
   const canAsk = question.trim().length >= 2 && !streaming && !atLimit;
   const hasConversation = messages.some((message) => message.text.trim());
-  const lastJesusIndex = messages.findLastIndex(
-    (message) => message.role === "jesus" && message.text.trim(),
-  );
-  const shareQuestion =
-    lastJesusIndex > 0
-      ? [...messages.slice(0, lastJesusIndex)].reverse().find((message) => message.role === "user")
-          ?.text ?? ""
-      : "";
-  const shareAnswer = lastJesusIndex >= 0 ? messages[lastJesusIndex]?.text ?? "" : "";
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -135,7 +123,6 @@ export function AskPanel({
     setQuestion("");
     setError("");
     setStatus("streaming");
-    setShareOpen(false);
 
     const rollback = (message: string, code: AskError) => {
       setMessages((current) => current.filter((item) => item.id !== jesusId && item.id !== userId));
@@ -211,7 +198,6 @@ export function AskPanel({
     setQuestion("");
     setError("");
     setStatus("idle");
-    setShareOpen(false);
   }
 
   function onSupportClick(event: MouseEvent<HTMLAnchorElement>) {
@@ -244,17 +230,6 @@ export function AskPanel({
                   ) : (
                     <ReplyText text={message.text} streaming={isStreaming} />
                   )}
-                  {!streaming && !mine && index === lastJesusIndex && message.text ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-3 h-8 px-2.5 text-xs"
-                      onClick={() => setShareOpen(true)}
-                    >
-                      <Share2 />
-                      Share
-                    </Button>
-                  ) : null}
                 </div>
               </div>
             );
@@ -336,13 +311,6 @@ export function AskPanel({
           </div>
         </footer>
       </div>
-
-      <ShareCard
-        question={shareQuestion}
-        answer={shareAnswer}
-        open={shareOpen}
-        onOpenChange={setShareOpen}
-      />
     </div>
   );
 }

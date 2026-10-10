@@ -45,7 +45,7 @@ export const metadata: Metadata = {
         url: "/art/jesus-og.jpg",
         width: 1200,
         height: 1338,
-        alt: "Jesus with arms open, glowing in the clouds above the earth.",
+        alt: "Jesus with arms open, light shining through the clouds.",
       },
     ],
   },
@@ -67,7 +67,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           imageSizes="100vw"
         />
       </head>
-      <body className="min-h-dvh bg-[#16324a] text-[#f6efe2]">{children}</body>
+      <body className="min-h-dvh bg-[#07080e] text-[#f6efe2]">{children}</body>
     </html>
   );
 }

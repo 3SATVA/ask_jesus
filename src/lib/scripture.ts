@@ -58,14 +58,3 @@ export function parseReply(text: string): ReplyBlock[] {
   );
 }
 
-/** Quote markers removed, for copy and the share card. */
-export function replyToPlainText(text: string) {
-  return parseReply(text)
-    .map((block) => {
-      if (block.type === "prose") return block.text;
-      const spoken = block.quote ? `“${block.quote}”` : "";
-      const reference = block.reference ? `(${block.reference})` : "";
-      return [spoken, reference].filter(Boolean).join(" ");
-    })
-    .join("\n\n");
-}

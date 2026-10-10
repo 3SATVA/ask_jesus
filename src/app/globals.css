@@ -134,15 +134,12 @@
 }
 
 :root {
-  /* Crown of the head in the source portrait. Everything above it is sky
-     and the lettering baked into the image. */
-  --head-top: 0.15;
+  /* The portrait is already framed: crown near the top, dark fade at the bottom. */
+  --head-top: 0;
   /* Just under the chin. The title's top edge sits on this line. */
-  --chin-at: 0.44;
+  --chin-at: 0.43;
   --title-size: clamp(1.15rem, 12.2vw, 3.45rem);
-  /* Tall enough to crop the sky, short enough that his chest stays
-     in the upper half and the conversation can fill the rest. */
-  --img-h: calc(100dvh / (1 - var(--head-top)));
+  --img-h: 100dvh;
 }
 
 .art-frame {
@@ -163,7 +160,7 @@
 .art-shift-blur {
   z-index: 0;
   transform-origin: center calc(var(--head-top) * 100%);
-  transform: translateX(-50%) scale(2.6);
+  transform: translateX(-50%) scale(3.2);
   filter: blur(36px);
 }
 
