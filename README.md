@@ -6,7 +6,7 @@ His personality is the plain text in `JESUS_PROMPT.md`, at the root of this repo
 
 The About page (`/about`), linked from the main screen, keeps the disclaimer: this is not Jesus, not scripture, and not a substitute for pastoral, medical, legal, or mental health care. That disclaimer stays off the conversation itself.
 
-The full-screen background is the supplied portrait of Jesus, arms open, light behind him, already framed with his head near the top and a dark fade below. It is served as responsive AVIF and WebP from `public/art`.
+The full-screen background is the supplied portrait of Jesus, arms open, light behind him, with a dark fade below. It is positioned so the top of his hair meets the top of the screen. It is served as responsive AVIF and WebP from `public/art`.
 
 ## Run locally
 
