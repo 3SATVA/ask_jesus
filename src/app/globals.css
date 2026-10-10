@@ -145,12 +145,45 @@
   object-position: center center;
 }
 
-.chat-column {
+.chat-dock {
+  --chat-max: 44dvh;
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  bottom: 0;
+  display: flex;
   width: min(92vw, 36rem);
+  max-height: var(--chat-max);
+  min-height: 0;
+  transform: translateX(-50%);
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.chat-column {
+  width: 100%;
+  min-height: 0;
+  max-height: var(--chat-max);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.chat-log {
+  flex: 1 1 auto;
+  padding-top: 1.35rem;
+  padding-bottom: 0.35rem;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.35rem);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 1.35rem);
 }
 
 .ask-title {
-  position: relative;
+  position: absolute;
+  z-index: 10;
+  top: max(0.75rem, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
   color: #f7f0e4;
   -webkit-text-stroke: 0.4px rgba(40, 22, 8, 0.35);
   text-shadow:
@@ -333,8 +366,20 @@
     object-position: center 8%;
   }
 
-  .chat-column {
+  /* The crop puts his face lower in the frame, so the thread stays shorter. */
+  .chat-dock {
+    --chat-max: 32dvh;
     width: min(40rem, 56vw);
+  }
+}
+
+@media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+  .art-photo {
+    object-position: center 24%;
+  }
+
+  .chat-dock {
+    --chat-max: 30dvh;
   }
 }
 
