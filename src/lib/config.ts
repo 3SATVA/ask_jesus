@@ -1,5 +1,5 @@
-/** Default language model. Override with AI_GATEWAY_MODEL (an ID from /v1/models). */
-export const DEFAULT_MODEL = "google/gemini-3.8-flash";
+/** Default OpenAI chat model. Override with OPENAI_MODEL. */
+export const DEFAULT_MODEL = "gpt-6-luna";
 
 export const DEFAULT_DAILY_LIMIT = 5;
 
@@ -13,17 +13,14 @@ export function dailyLimit() {
   return n;
 }
 
-export function gatewayModel() {
-  const raw = process.env.AI_GATEWAY_MODEL?.trim();
+export function openaiModel() {
+  const raw = process.env.OPENAI_MODEL?.trim();
   return raw || DEFAULT_MODEL;
 }
 
-/** Local dev uses AI_GATEWAY_API_KEY. Vercel deployments can use OIDC instead. */
-export function hasGatewayCredentials() {
-  return Boolean(
-    process.env.AI_GATEWAY_API_KEY?.trim() ||
-      process.env.VERCEL_OIDC_TOKEN?.trim(),
-  );
+/** The AI SDK reads OPENAI_API_KEY. It stays on the server. */
+export function hasOpenAIKey() {
+  return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
 export function supportUrl() {

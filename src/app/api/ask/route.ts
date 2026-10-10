@@ -1,8 +1,5 @@
-import {
-  createTextStreamResponse,
-  streamText,
-  type LanguageModel,
-} from "ai";
+import { openai } from "@ai-sdk/openai";
+import { createTextStreamResponse, streamText } from "ai";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   INVALID_MESSAGE,
@@ -15,8 +12,8 @@ import {
 import { crisisMessage } from "@/lib/crisis";
 import {
   dailyLimit,
-  gatewayModel,
-  hasGatewayCredentials,
+  hasOpenAIKey,
+  openaiModel,
   supportUrl,
 } from "@/lib/config";
 import { JESUS_SYSTEM_PROMPT, questionPrompt } from "@/lib/prompt";
@@ -90,7 +87,7 @@ export async function POST(request: NextRequest) {
     question,
     used,
     limit,
-    hasKey: hasGatewayCredentials(),
+    hasKey: hasOpenAIKey(),
   });
 
   if (decision.type === "invalid") {
@@ -117,10 +114,9 @@ export async function POST(request: NextRequest) {
 
   const nextUsed = used + 1;
   const result = streamText({
-    model: gatewayModel() as LanguageModel,
+    model: openai(openaiModel()),
     instructions: JESUS_SYSTEM_PROMPT,
     prompt: questionPrompt(question),
-    temperature: 0.6,
     maxOutputTokens: 700,
     maxRetries: 1,
     abortSignal: request.signal,
