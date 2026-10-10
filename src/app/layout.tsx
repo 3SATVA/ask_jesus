@@ -67,7 +67,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           imageSizes="100vw"
         />
       </head>
-      <body className="min-h-dvh bg-[#07080e] text-[#f6efe2]">{children}</body>
+      <body className="min-h-dvh bg-black text-[#f6efe2]">{children}</body>
     </html>
   );
 }

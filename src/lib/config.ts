@@ -1,7 +1,7 @@
 /** Default OpenAI chat model. Override with OPENAI_MODEL. */
 export const DEFAULT_MODEL = "gpt-6-luna";
 
-export const DEFAULT_DAILY_LIMIT = 5;
+export const DEFAULT_DAILY_LIMIT = 10;
 
 export const MAX_QUESTION_LENGTH = 600;
 

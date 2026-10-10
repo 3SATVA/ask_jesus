@@ -139,34 +139,38 @@
   /* Just under the chin. The title's top edge sits on this line. */
   --chin-at: 0.43;
   --title-size: clamp(1.15rem, 12.2vw, 3.45rem);
-  /* Scale so the hair line sits on the top edge and the rest fills the screen. */
-  --img-h: calc(100dvh / (1 - var(--head-top)));
+  /* Visible glow between the viewport top and his hair. */
+  --glow-band: 4.5dvh;
+  /* Larger than the screen on a phone, so the screen edge cuts about
+     halfway across each outstretched hand. A wide window still leaves
+     black at the sides. */
+  --img-w: min(122vw, calc(100dvh * 1.1));
+  --img-h: calc(var(--img-w) * 2176 / 1952);
+  --img-top: calc(var(--glow-band) - var(--head-top) * var(--img-h));
 }
 
 .art-frame {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  background: #000;
 }
 
 .art-shift {
   position: absolute;
-  top: calc(var(--head-top) * var(--img-h) * -1);
+  top: var(--img-top);
   left: 50%;
   height: var(--img-h);
-  width: calc(var(--img-h) * 1952 / 2176);
+  width: var(--img-w);
   transform: translateX(-50%);
-}
-
-.art-shift-blur {
-  z-index: 0;
-  transform-origin: center calc(var(--head-top) * 100%);
-  transform: translateX(-50%) scale(3.2);
-  filter: blur(36px);
-}
-
-.art-shift:not(.art-shift-blur) {
-  z-index: 1;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, #000 4%, #000 96%, transparent 100%),
+    linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 0%, #000 4%, #000 96%, transparent 100%),
+    linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .art-photo {
@@ -180,7 +184,7 @@
 .chat-dock {
   position: absolute;
   z-index: 10;
-  top: calc((var(--chin-at) - var(--head-top)) * var(--img-h) + var(--title-size) + 0.2rem);
+  top: calc(var(--glow-band) + (var(--chin-at) - var(--head-top)) * var(--img-h) + var(--title-size) + 0.2rem);
   right: 0;
   bottom: 0;
   left: 0;
@@ -215,7 +219,7 @@
 .ask-title {
   position: absolute;
   z-index: 20;
-  top: calc((var(--chin-at) - var(--head-top)) * var(--img-h));
+  top: calc(var(--glow-band) + (var(--chin-at) - var(--head-top)) * var(--img-h));
   left: 50%;
   width: max-content;
   transform: translateX(-50%);

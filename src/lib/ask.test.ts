@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { decideAsk } from "./ask";
+import { DEFAULT_DAILY_LIMIT, dailyLimit } from "./config";
 import { detectCrisis } from "./crisis";
 import { parseQuota } from "./quota";
 
@@ -23,19 +24,32 @@ describe("detectCrisis", () => {
   });
 });
 
+describe("dailyLimit", () => {
+  it("defaults the free daily limit to 10", () => {
+    const previous = process.env.DAILY_QUESTION_LIMIT;
+    delete process.env.DAILY_QUESTION_LIMIT;
+    assert.equal(DEFAULT_DAILY_LIMIT, 10);
+    assert.equal(dailyLimit(), 10);
+    process.env.DAILY_QUESTION_LIMIT = "4";
+    assert.equal(dailyLimit(), 4);
+    if (previous === undefined) delete process.env.DAILY_QUESTION_LIMIT;
+    else process.env.DAILY_QUESTION_LIMIT = previous;
+  });
+});
+
 describe("decideAsk", () => {
-  const base = { used: 0, limit: 5, hasKey: true };
+  const base = { used: 0, limit: 10, hasKey: true };
 
   it("helps a person in crisis before the daily limit or the API key", () => {
     assert.deepEqual(
-      decideAsk({ ...base, question: "I want to kill myself", used: 5, hasKey: false }),
+      decideAsk({ ...base, question: "I want to kill myself", used: 10, hasKey: false }),
       { type: "crisis", kind: "self-harm" },
     );
   });
 
   it("stops at the daily limit, then reports a missing key", () => {
     assert.deepEqual(
-      decideAsk({ ...base, question: "How do I forgive?", used: 5 }),
+      decideAsk({ ...base, question: "How do I forgive?", used: 10 }),
       { type: "limit" },
     );
     assert.deepEqual(

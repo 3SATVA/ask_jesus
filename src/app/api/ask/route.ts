@@ -16,7 +16,7 @@ import {
   openaiModel,
   supportUrl,
 } from "@/lib/config";
-import { loadJesusPrompt } from "@/lib/prompt";
+import { instructionsForTurn } from "@/lib/prompt";
 import { QUOTA_COOKIE, parseQuota, quotaSetCookie } from "@/lib/quota";
 
 export const maxDuration = 60;
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
   ];
   const result = streamText({
     model: openai(openaiModel()),
-    instructions: loadJesusPrompt(),
+    instructions: instructionsForTurn(Math.max(0, limit - used)),
     messages,
     maxOutputTokens: 420,
     providerOptions: {

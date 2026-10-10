@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { crisisMessage } from "./crisis";
-import { loadJesusPrompt } from "./prompt";
+import { instructionsForTurn, loadJesusPrompt, questionsLeftNote } from "./prompt";
 
 describe("JESUS_PROMPT.md", () => {
   const prompt = loadJesusPrompt();
@@ -36,6 +36,35 @@ describe("JESUS_PROMPT.md", () => {
     assert.match(prompt, /words of love and healing/);
     assert.match(prompt, /Only once you understand the situation/);
     assert.match(prompt, /one Psalm or other Old Testament quotation/);
+    assert.match(prompt, /That is not the end of the conversation/);
+    assert.match(prompt, /how it lands, or what step feels possible/);
+    assert.match(prompt, /When 2 or fewer remain/);
+    assert.match(prompt, /do not reply with only a question/);
+    assert.match(prompt, /When this is their last message today, close warmly/);
+    assert.match(prompt, /do not ask a question that needs a reply/);
+  });
+
+  it("tells him how many messages remain, and which one is the last", () => {
+    assert.equal(
+      questionsLeftNote(5),
+      "The person has 5 messages left today, including this one.",
+    );
+    assert.equal(
+      questionsLeftNote(2),
+      "The person has 2 messages left today, including this one.",
+    );
+    assert.match(questionsLeftNote(2), /2 messages left/);
+    assert.doesNotMatch(questionsLeftNote(2), /last message/);
+    assert.equal(
+      questionsLeftNote(1),
+      "The person has 1 message left today. This is their last message today.",
+    );
+    assert.match(questionsLeftNote(0), /last message today/);
+
+    const told = instructionsForTurn(2);
+    assert.match(told, /^You are AI Jesus/);
+    assert.match(told, /The person has 2 messages left today, including this one\.$/);
+    assert.doesNotMatch(told, /Editing this file/);
   });
 
   it("quotes the Hebrew scriptures, and not the later New Testament books", () => {
