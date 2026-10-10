@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
+import Link from "next/link";
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -216,13 +217,21 @@ export function AskPanel({
 
       <footer className="mx-auto mt-5 flex w-full max-w-md flex-col items-center gap-3 text-center">
         <p className="text-xs leading-5 text-[#f6efe2]/80">{DISCLAIMER}</p>
-        {errorCode !== "limit" && !atLimit ? (
+        <div className="flex items-center gap-4">
+          <Link
+            href="/about"
+            className="text-xs tracking-[0.16em] text-[#cbbfa8]/80 uppercase hover:text-[#f0d48a]"
+          >
+            About
+          </Link>
+          {errorCode !== "limit" && !atLimit ? (
           <SupportLink
             supportUrl={supportUrl}
             supportNote={supportNote}
             onSupportClick={onSupportClick}
           />
-        ) : null}
+          ) : null}
+        </div>
       </footer>
 
       <ShareCard

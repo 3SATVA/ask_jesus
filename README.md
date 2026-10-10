@@ -1,6 +1,8 @@
 # ASK JESUS
 
-A single-screen place to ask a question and receive a warm, first-person reply grounded in the four Gospels (Matthew, Mark, Luke, and John). Answers stream from a language model through the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway). They are an AI interpretation inspired by the Gospels, not scripture.
+A single-screen place to ask a question and receive a warm, first-person reply grounded in the four Gospels (Matthew, Mark, Luke, and John). The voice is instructed to lead with compassion, mercy, and hope. Answers stream from a language model through the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway). They are an AI interpretation inspired by the Gospels, not scripture.
+
+The About page (`/about`), linked from the main screen, explains that this is an estimate of what Jesus might say. It carries the disclaimer: not Jesus, not scripture, and not a substitute for pastoral, medical, legal, or mental health care.
 
 The background is an original illustration made for this app: Jesus with arms open, a golden light at his heart, and soft glowing shapes around him. It is not a reproduction of a copyrighted painting.
 
