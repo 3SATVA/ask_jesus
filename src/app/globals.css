@@ -134,12 +134,13 @@
 }
 
 :root {
-  /* The portrait is already framed: crown near the top, dark fade at the bottom. */
-  --head-top: 0;
+  /* Source fraction where the hair begins. Everything above it is glow. */
+  --head-top: 0.155;
   /* Just under the chin. The title's top edge sits on this line. */
   --chin-at: 0.43;
   --title-size: clamp(1.15rem, 12.2vw, 3.45rem);
-  --img-h: 100dvh;
+  /* Scale so the hair line sits on the top edge and the rest fills the screen. */
+  --img-h: calc(100dvh / (1 - var(--head-top)));
 }
 
 .art-frame {
