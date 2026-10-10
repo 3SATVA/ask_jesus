@@ -1,6 +1,6 @@
 # ASK JESUS
 
-A single-screen place to ask a question and receive a warm, first-person reply grounded in the four Gospels (Matthew, Mark, Luke, and John). The voice is instructed to lead with compassion, mercy, and hope. Answers stream from OpenAI through the [AI SDK](https://ai-sdk.dev) (`@ai-sdk/openai`). They are an AI interpretation inspired by the Gospels, not scripture.
+A single-screen place to talk and receive a warm, first-person reply. The four Gospels come first, with the rest of the Protestant New Testament and a few messianic Old Testament passages beside them. The voice is instructed to lead with compassion, mercy, and hope, in the manner of a conversation rather than a sermon. Answers stream from OpenAI through the [AI SDK](https://ai-sdk.dev) (`@ai-sdk/openai`). They are an AI interpretation inspired by that canon, not scripture.
 
 The About page (`/about`), linked from the main screen, explains that this is an estimate of what Jesus might say. It carries the disclaimer: not Jesus, not scripture, and not a substitute for pastoral, medical, legal, or mental health care.
 
@@ -44,7 +44,9 @@ Changing `NEXT_PUBLIC_*` values requires a new build.
 1. If it sounds like someone is in danger, it streams a short compassionate reply with real help (988, the National Domestic Violence Hotline, Childhelp, or 911). That reply does not count against the daily limit.
 2. If the daily limit is used up, it returns a friendly note and the support link.
 3. If `OPENAI_API_KEY` is not configured, it returns a clear error.
-4. Otherwise it streams a reply with `streamText` from the AI SDK and the OpenAI provider. The system prompt keeps the voice in the first person, limits sources to the four Gospels, and asks for chapter and verse only when the reference is trustworthy. GPT-6 models, including the default, do not accept a temperature setting, so the request does not send one.
+4. Otherwise it streams a reply with `streamText` from the AI SDK and the OpenAI provider. The recent conversation is sent with the new question, so the reply can remember what was already said. Only the new question counts against the daily limit. The browser keeps the current conversation in `localStorage`. GPT-6 models, including the default, do not accept a temperature setting, so the request does not send one.
+
+A scripture quotation is marked on its own line as `> Exact words. (Book 1:1)`. The chat renders that line in italic gold, with the reference beside it.
 
 `GET /api/ask` returns how many questions are left today.
 

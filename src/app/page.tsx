@@ -6,13 +6,11 @@ export default function Home() {
   return (
     <main className="relative h-dvh overflow-hidden">
       <JesusScene />
-      <div className="art-frame z-10">
-        <h1 className="ask-title hero-title pointer-events-none left-1/2 w-max -translate-x-1/2 text-center font-cinzel text-[clamp(2rem,7.4vw,4.6rem)] leading-none font-semibold tracking-[0.16em] sm:tracking-[0.22em]">
+      <div className="relative z-10 flex h-dvh min-h-0 flex-col">
+        <h1 className="ask-title pointer-events-none shrink-0 px-4 pt-[max(0.85rem,env(safe-area-inset-top))] text-center font-cinzel text-[clamp(1.7rem,6.2vw,3.5rem)] leading-none font-semibold tracking-[0.16em] sm:tracking-[0.22em]">
           ASK JESUS
         </h1>
-        <div className="hero-prompt absolute left-1/2 -translate-x-1/2">
-          <AskPanel supportUrl={supportUrl()} initialLimit={dailyLimit()} />
-        </div>
+        <AskPanel supportUrl={supportUrl()} initialLimit={dailyLimit()} />
       </div>
     </main>
   );

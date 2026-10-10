@@ -9,3 +9,6 @@ export const INVALID_MESSAGE =
 
 export const UPSTREAM_MESSAGE =
   "I cannot answer just now. Please try again in a moment.";
+
+export const DISCLAIMER =
+  "An AI interpretation drawn from the Protestant canon. Not Jesus, and not scripture.";
