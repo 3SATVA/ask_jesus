@@ -31,9 +31,15 @@ function ArtPicture({
 }
 
 /** Portrait scaled so both hands fit, with a little glow left above his hair. */
-export function JesusScene() {
+export function JesusScene({ contained = false }: { contained?: boolean }) {
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-black">
+    <div
+      className={
+        contained
+          ? "pointer-events-none absolute inset-0 z-0 overflow-hidden bg-black"
+          : "pointer-events-none fixed inset-0 z-0 overflow-hidden bg-black"
+      }
+    >
       <div className="art-frame">
         <ArtPicture
           priority

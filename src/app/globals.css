@@ -127,26 +127,59 @@
     @apply font-sans;
     color-scheme: dark;
     background: #07090f;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior: none;
   }
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior: none;
   }
 }
 
+html.app-scroll-lock,
+html.app-scroll-lock body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html.app-scroll-lock body {
+  position: fixed;
+  inset: 0;
+}
+
 :root {
+  /* Full screen, not the area left above the keyboard. */
+  --layout-height: 100dvh;
   /* Source fraction where the hair begins. Everything above it is glow. */
   --head-top: 0.155;
   /* Just under the chin. The title's top edge sits on this line. */
   --chin-at: 0.43;
   --title-size: clamp(1.15rem, 12.2vw, 3.45rem);
   /* Visible glow between the viewport top and his hair. */
-  --glow-band: 4.5dvh;
+  --glow-band: calc(var(--layout-height) * 0.045);
   /* Larger than the screen on a phone, so the screen edge cuts about
      halfway across each outstretched hand. A wide window still leaves
      black at the sides. */
-  --img-w: min(122vw, calc(100dvh * 1.1));
+  --img-w: min(122vw, calc(var(--layout-height) * 1.1));
   --img-h: calc(var(--img-w) * 2176 / 1952);
   --img-top: calc(var(--glow-band) - var(--head-top) * var(--img-h));
+}
+
+.app-shell {
+  --vv-top: 0px;
+  --vv-height: 100dvh;
+  position: fixed;
+  top: var(--vv-top);
+  left: 0;
+  z-index: 0;
+  width: 100%;
+  height: var(--vv-height);
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #000;
 }
 
 .art-frame {
@@ -184,7 +217,10 @@
 .chat-dock {
   position: absolute;
   z-index: 10;
-  top: calc(var(--glow-band) + (var(--chin-at) - var(--head-top)) * var(--img-h) + var(--title-size) + 0.2rem);
+  top: min(
+    calc(var(--glow-band) + (var(--chin-at) - var(--head-top)) * var(--img-h) + var(--title-size) + 0.2rem),
+    calc(100% - 9.5rem)
+  );
   right: 0;
   bottom: 0;
   left: 0;
@@ -194,6 +230,7 @@
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
+  overscroll-behavior: none;
   pointer-events: none;
 }
 
@@ -210,10 +247,26 @@
 
 .chat-log {
   flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding-top: 1.35rem;
   padding-bottom: 0.35rem;
+  -webkit-overflow-scrolling: touch;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.35rem);
   mask-image: linear-gradient(to bottom, transparent 0, #000 1.35rem);
+}
+
+textarea.prompt-input {
+  font-size: 16px;
+}
+
+.app-shell[data-keyboard="open"] .composer {
+  padding-bottom: 0.35rem;
+}
+
+.app-shell[data-keyboard="open"] .composer-footer {
+  order: -1;
 }
 
 .ask-title {

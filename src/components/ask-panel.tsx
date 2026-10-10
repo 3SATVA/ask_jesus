@@ -65,7 +65,7 @@ export function AskPanel({
   const [remaining, setRemaining] = useState<number | null>(null);
   const [limit, setLimit] = useState(initialLimit);
   const [supportNote, setSupportNote] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMessages(loadMessages());
@@ -93,7 +93,9 @@ export function AskPanel({
   }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
+    const log = logRef.current;
+    if (!log) return;
+    log.scrollTop = log.scrollHeight;
   }, [messages, status, error]);
 
   const streaming = status === "streaming";
@@ -211,6 +213,7 @@ export function AskPanel({
   return (
     <div className="chat-column flex min-h-0 w-full flex-col px-3">
       <div
+        ref={logRef}
         className="chat-log min-h-0 overflow-y-auto"
         role="log"
         aria-label="Conversation"
@@ -234,11 +237,10 @@ export function AskPanel({
               </div>
             );
           })}
-          <div ref={bottomRef} />
         </div>
       </div>
 
-      <div className="pointer-events-auto shrink-0 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+      <div className="composer pointer-events-auto flex shrink-0 flex-col pb-[max(0.6rem,env(safe-area-inset-bottom))]">
         {error ? (
           <p className="mb-2 px-1 text-sm leading-6 text-[#f6efe2]" role="alert">
             {error}
@@ -263,7 +265,7 @@ export function AskPanel({
               maxLength={600}
               placeholder={hasConversation ? "Say a little more…" : "What is on your heart?"}
               disabled={streaming || atLimit}
-              className="max-h-24 min-h-0 flex-1 resize-none border-0 bg-transparent px-1 py-1 text-base text-[#f4f7fb] shadow-none placeholder:text-[#b7c0ca] focus-visible:ring-0 md:text-base"
+              className="prompt-input max-h-24 min-h-0 flex-1 resize-none border-0 bg-transparent px-1 py-1 text-[16px] text-[#f4f7fb] shadow-none placeholder:text-[#b7c0ca] focus-visible:ring-0 md:text-[16px]"
               onChange={(event) => setQuestion(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
@@ -282,7 +284,7 @@ export function AskPanel({
           </div>
         </form>
 
-        <footer className="mt-2 flex flex-col items-center gap-1 px-2 text-center">
+        <footer className="composer-footer mt-2 flex flex-col items-center gap-1 px-2 text-center">
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-white/75">
             <span className="drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)]">
               {remainingLabel(remaining, limit)}
