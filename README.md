@@ -35,7 +35,7 @@ Without that key, the page still loads. Asking a question returns a clear messag
 | `OPENAI_MODEL` | No | OpenAI model ID. Defaults to `gpt-6-luna`, a small, current, low-cost chat model. Pick an ID from the [OpenAI models](https://developers.openai.com/api/docs/models) list. |
 | `DAILY_QUESTION_LIMIT` | No | Free questions per browser per UTC day. Defaults to `10`. Stored in an httpOnly cookie named `ask_jesus_quota`. This is a simple per-browser stub, not an account. |
 | `NEXT_PUBLIC_SUPPORT_URL` | No | Destination for the “Support this ministry” link. Leave it unset and the link explains that a giving page can be connected. |
-| `NEXT_PUBLIC_SITE_URL` | No | Absolute site URL for link previews. On Vercel, `VERCEL_PROJECT_PRODUCTION_URL` is used when this is unset. |
+| `NEXT_PUBLIC_SITE_URL` | No | Absolute site URL for link previews. On Vercel, `VERCEL_PROJECT_PRODUCTION_URL` is used when this is unset. Otherwise the URL is `https://ask-jesus-lake.vercel.app`. |
 
 Changing `NEXT_PUBLIC_*` values requires a new build.
 
