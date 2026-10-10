@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseReply, replyToPlainText } from "./scripture";
+import { parseReply } from "./scripture";
 
 describe("parseReply", () => {
   it("leaves an ordinary reply as prose", () => {
@@ -42,10 +42,4 @@ describe("parseReply", () => {
     ]);
   });
 
-  it("turns the marker into plain words for sharing", () => {
-    assert.equal(
-      replyToPlainText("> The Lord is my shepherd. (Psalm 23:1)"),
-      "“The Lord is my shepherd.” (Psalm 23:1)",
-    );
-  });
 });

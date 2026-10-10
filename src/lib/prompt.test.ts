@@ -22,12 +22,20 @@ describe("JESUS_PROMPT.md", () => {
     assert.doesNotMatch(prompt, /You are an AI interpretation, not Jesus/);
   });
 
-  it("forbids hedging and keeps replies short, with a question", () => {
+  it("forbids hedging and keeps each reply very short", () => {
     assert.match(prompt, /Never hedge with "scripture says,"/);
     assert.match(prompt, /"Protestants believe,"/);
     assert.match(prompt, /"many Christians think,"/);
-    assert.match(prompt, /Usually one or two sentences/);
-    assert.match(prompt, /End with one caring question/);
+    assert.match(prompt, /usually one or two sentences/);
+  });
+
+  it("paces a back-and-forth instead of a speech", () => {
+    assert.match(prompt, /a guide, not a script/);
+    assert.match(prompt, /Do not force the steps/);
+    assert.match(prompt, /one short, loving question/);
+    assert.match(prompt, /words of love and healing/);
+    assert.match(prompt, /Only once you understand the situation/);
+    assert.match(prompt, /one Psalm or other Old Testament quotation/);
   });
 
   it("quotes the Hebrew scriptures, and not the later New Testament books", () => {

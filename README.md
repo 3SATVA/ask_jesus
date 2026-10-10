@@ -6,7 +6,7 @@ His personality is the plain text in `JESUS_PROMPT.md`, at the root of this repo
 
 The About page (`/about`), linked from the main screen, keeps the disclaimer: this is not Jesus, not scripture, and not a substitute for pastoral, medical, legal, or mental health care. That disclaimer stays off the conversation itself.
 
-The full-screen background is the supplied portrait of Jesus, arms open, glowing in the clouds above the earth. It is served as responsive AVIF and WebP from `public/art`.
+The full-screen background is the supplied portrait of Jesus, arms open, light behind him, already framed with his head near the top and a dark fade below. It is served as responsive AVIF and WebP from `public/art`.
 
 ## Run locally
 
@@ -51,8 +51,6 @@ Changing `NEXT_PUBLIC_*` values requires a new build.
 A scripture quotation is marked on its own line as `> Exact words. (Book 1:1)`. The chat renders that line in italic gold, with the reference beside it. Those marked quotations are from the Hebrew scriptures. Gospel sentences stay in his own voice and are not marked that way.
 
 `GET /api/ask` returns how many questions are left today.
-
-A finished answer can be copied, downloaded as a card, or shared from the “Share this answer” button.
 
 ## Deploy on Vercel
 

@@ -35,12 +35,12 @@ function ArtPicture({
 /** Portrait anchored so the crown of his head meets the top of the screen. */
 export function JesusScene() {
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[#16324a]">
+    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[#07080e]">
       <div className="art-frame">
         <ArtPicture blur alt="" className="art-photo" />
         <ArtPicture
           priority
-          alt="Jesus with arms open, glowing in the clouds above the earth."
+          alt="Jesus with arms open, light shining through the clouds."
           className="art-photo"
         />
       </div>
