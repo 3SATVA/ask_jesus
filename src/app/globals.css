@@ -141,9 +141,10 @@
   --title-size: clamp(1.15rem, 12.2vw, 3.45rem);
   /* Visible glow between the viewport top and his hair. */
   --glow-band: 4.5dvh;
-  /* 10% larger than the full-width frame. On a phone the screen edge
-     cuts about halfway across each outstretched hand. */
-  --img-w: min(110vw, calc(100dvh * 0.99));
+  /* Larger than the screen on a phone, so the screen edge cuts about
+     halfway across each outstretched hand. A wide window still leaves
+     black at the sides. */
+  --img-w: min(122vw, calc(100dvh * 1.1));
   --img-h: calc(var(--img-w) * 2176 / 1952);
   --img-top: calc(var(--glow-band) - var(--head-top) * var(--img-h));
 }
