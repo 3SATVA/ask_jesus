@@ -131,57 +131,59 @@ export function AskPanel({
     setSupportNote(true);
   }
 
-  return (
-    <div className="flex flex-1 flex-col pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <form onSubmit={onSubmit} className="glass-panel mt-14 rounded-3xl p-4 sm:p-5">
-        <label htmlFor="question" className="sr-only">
-          Your question
-        </label>
-        <Textarea
-          id="question"
-          name="question"
-          value={question}
-          maxLength={600}
-          placeholder="What is on your heart?"
-          disabled={streaming || atLimit}
-          className="min-h-24 resize-none border-[rgba(240,212,138,0.28)] bg-black/25 px-3 py-3 text-base text-[#f6efe2] placeholder:text-[#cbbfa8]/80 md:text-base"
-          onChange={(event) => setQuestion(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              event.currentTarget.form?.requestSubmit();
-            }
-          }}
-        />
+  const showAsk = streaming || question.trim().length > 0;
 
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs tracking-wide text-[#cbbfa8]">
-            {remainingLabel(remaining, limit)}
-          </p>
+  return (
+    <div className="pointer-events-auto">
+      <form onSubmit={onSubmit} className="prompt-shell rounded-[1.15rem] px-4 py-2.5 sm:px-5 sm:py-3">
+        <div className="flex items-center gap-2">
+          <label htmlFor="question" className="sr-only">
+            Your question
+          </label>
+          <Textarea
+            id="question"
+            name="question"
+            value={question}
+            rows={1}
+            maxLength={600}
+            placeholder="What is on your heart?"
+            disabled={streaming || atLimit}
+            className="max-h-24 min-h-0 flex-1 resize-none border-0 bg-transparent px-1 py-1 text-base text-[#f4f7fb] shadow-none placeholder:text-[#b7c0ca] focus-visible:ring-0 md:text-base"
+            onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                event.currentTarget.form?.requestSubmit();
+              }
+            }}
+          />
           <Button
             type="submit"
             disabled={!canAsk}
-            className="h-11 px-6 text-base sm:min-w-28"
+            className={showAsk ? "h-9 shrink-0 px-3" : "sr-only"}
           >
             {streaming ? "Listening…" : "Ask"}
           </Button>
         </div>
 
         {streaming && !answer ? (
-          <p className="mt-5 font-display text-lg text-[#f0d48a] italic">Listening…</p>
+          <p className="mt-3 font-display text-lg text-[#f0d48a] italic">Listening…</p>
         ) : null}
 
         {asked && (answer || status === "error") ? (
-          <div className="mt-5 border-t border-[rgba(240,212,138,0.2)] pt-4" aria-live="polite">
+          <div
+            className="mt-3 max-h-[34vh] overflow-y-auto border-t border-white/10 pt-3"
+            aria-live="polite"
+          >
             <p className="font-display text-base text-[#f0d48a] italic">{asked}</p>
             {answer ? (
-              <p className="mt-3 font-display text-lg leading-8 whitespace-pre-wrap text-[#f7f1e4]">
+              <p className="mt-2 font-display text-lg leading-8 whitespace-pre-wrap text-[#f7f1e4]">
                 {answer}
                 {streaming ? <span className="caret" aria-hidden="true" /> : null}
               </p>
             ) : null}
             {error ? (
-              <p className="mt-3 text-sm leading-6 text-[#f6efe2]" role="alert">
+              <p className="mt-2 text-sm leading-6 text-[#f6efe2]" role="alert">
                 {error}
               </p>
             ) : null}
@@ -189,7 +191,7 @@ export function AskPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="mt-4"
+                className="mt-3"
                 onClick={() => setShareOpen(true)}
               >
                 <Share2 />
@@ -200,37 +202,32 @@ export function AskPanel({
         ) : null}
 
         {atLimit && status !== "streaming" ? (
-          <p className="mt-4 text-sm leading-6 text-[#f7f1e4]" role="status">
+          <p className="mt-3 text-sm leading-6 text-[#f7f1e4]" role="status">
             {LIMIT_MESSAGE}
           </p>
         ) : null}
-
-        {(errorCode === "limit" || atLimit) && (
-          <SupportLink
-            supportUrl={supportUrl}
-            supportNote={supportNote}
-            onSupportClick={onSupportClick}
-            emphasized
-          />
-        )}
       </form>
 
-      <footer className="mx-auto mt-5 flex w-full max-w-md flex-col items-center gap-3 text-center">
-        <p className="text-xs leading-5 text-[#f6efe2]/80">{DISCLAIMER}</p>
-        <div className="flex items-center gap-4">
+      <footer className="mt-2 flex flex-col items-center gap-1 px-2 text-center">
+        <p className="text-[11px] leading-4 text-white/80 drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)]">
+          {DISCLAIMER}
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-white/75">
+          <span className="drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)]">
+            {remainingLabel(remaining, limit)}
+          </span>
           <Link
             href="/about"
-            className="text-xs tracking-[0.16em] text-[#cbbfa8]/80 uppercase hover:text-[#f0d48a]"
+            className="tracking-[0.14em] uppercase drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)] hover:text-white"
           >
             About
           </Link>
-          {errorCode !== "limit" && !atLimit ? (
           <SupportLink
             supportUrl={supportUrl}
             supportNote={supportNote}
             onSupportClick={onSupportClick}
+            quiet
           />
-          ) : null}
         </div>
       </footer>
 
@@ -248,21 +245,25 @@ function SupportLink({
   supportUrl,
   supportNote,
   onSupportClick,
-  emphasized = false,
+  quiet = false,
 }: {
   supportUrl: string;
   supportNote: boolean;
   onSupportClick: (event: MouseEvent<HTMLAnchorElement>) => void;
-  emphasized?: boolean;
+  quiet?: boolean;
 }) {
   return (
-    <div className={emphasized ? "mt-3 text-center" : ""}>
+    <div className={quiet ? "" : "mt-3 text-center"}>
       <a
         href={supportUrl || "#support"}
         onClick={onSupportClick}
         target={supportUrl ? "_blank" : undefined}
         rel={supportUrl ? "noopener noreferrer" : undefined}
-        className="text-sm text-[#f0d48a] underline decoration-[rgba(240,212,138,0.45)] underline-offset-4"
+        className={
+          quiet
+            ? "drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)] hover:text-white"
+            : "text-sm text-[#f0d48a] underline decoration-[rgba(240,212,138,0.45)] underline-offset-4"
+        }
       >
         Support this ministry
       </a>

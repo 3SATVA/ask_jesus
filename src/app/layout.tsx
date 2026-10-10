@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Outfit } from "next/font/google";
+import { Cinzel, Cormorant_Garamond, Outfit } from "next/font/google";
 import "./globals.css";
 
 const outfit = Outfit({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-outfit",
+});
+
+const cinzel = Cinzel({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-cinzel-face",
 });
 
 const display = Cormorant_Garamond({
@@ -36,10 +42,10 @@ export const metadata: Metadata = {
       "A quiet place to ask, with answers inspired by Matthew, Mark, Luke, and John.",
     images: [
       {
-        url: "/jesus.jpg",
-        width: 720,
-        height: 1280,
-        alt: "An original illustration of Jesus, arms open, with a golden light at his heart.",
+        url: "/art/jesus-og.jpg",
+        width: 1200,
+        height: 1338,
+        alt: "Jesus with arms open, glowing in the clouds above the earth.",
       },
     ],
   },
@@ -49,9 +55,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${outfit.variable} ${display.variable} h-full antialiased`}
+      className={`${outfit.variable} ${display.variable} ${cinzel.variable} h-full antialiased`}
     >
-      <body className="min-h-dvh bg-[#07090f] text-[#f6efe2]">{children}</body>
+      <head>
+        <link
+          rel="preload"
+          as="image"
+          href="/art/jesus-1280.avif"
+          type="image/avif"
+          imageSrcSet="/art/jesus-640.avif 640w, /art/jesus-960.avif 960w, /art/jesus-1280.avif 1280w, /art/jesus-1600.avif 1600w, /art/jesus-1952.avif 1952w"
+          imageSizes="100vw"
+        />
+      </head>
+      <body className="min-h-dvh bg-[#16324a] text-[#f6efe2]">{children}</body>
     </html>
   );
 }

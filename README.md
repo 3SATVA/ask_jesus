@@ -4,7 +4,7 @@ A single-screen place to ask a question and receive a warm, first-person reply g
 
 The About page (`/about`), linked from the main screen, explains that this is an estimate of what Jesus might say. It carries the disclaimer: not Jesus, not scripture, and not a substitute for pastoral, medical, legal, or mental health care.
 
-The background is an original illustration made for this app: Jesus with arms open, a golden light at his heart, and soft glowing shapes around him. It is not a reproduction of a copyrighted painting.
+The full-screen background is the supplied portrait of Jesus, arms open, glowing in the clouds above the earth. It is served as responsive AVIF and WebP from `public/art`.
 
 ## Run locally
 

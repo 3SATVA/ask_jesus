@@ -4,15 +4,15 @@ import { dailyLimit, supportUrl } from "@/lib/config";
 
 export default function Home() {
   return (
-    <main className="relative min-h-dvh">
+    <main className="relative h-dvh overflow-hidden">
       <JesusScene />
-      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-lg flex-col px-4">
-        <div className="flex h-[40vh] items-end justify-center">
-          <h1 className="ask-title translate-y-1/2 text-center font-display text-[clamp(1.85rem,6.4vw,3.35rem)] leading-none font-semibold tracking-[0.2em] sm:tracking-[0.28em]">
-            ASK JESUS
-          </h1>
+      <div className="art-frame z-10">
+        <h1 className="ask-title hero-title pointer-events-none left-1/2 w-max -translate-x-1/2 text-center font-cinzel text-[clamp(2rem,7.4vw,4.6rem)] leading-none font-semibold tracking-[0.16em] sm:tracking-[0.22em]">
+          ASK JESUS
+        </h1>
+        <div className="hero-prompt absolute left-1/2 -translate-x-1/2">
+          <AskPanel supportUrl={supportUrl()} initialLimit={dailyLimit()} />
         </div>
-        <AskPanel supportUrl={supportUrl()} initialLimit={dailyLimit()} />
       </div>
     </main>
   );

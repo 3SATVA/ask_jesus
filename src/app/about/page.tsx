@@ -36,7 +36,7 @@ export default function AboutPage() {
   return (
     <main className="relative min-h-dvh">
       <JesusScene />
-      <div className="pointer-events-none fixed inset-0 z-[1] bg-[#07090f]/62" />
+      <div className="pointer-events-none fixed inset-0 z-[1] bg-[#071018]/78" />
 
       <article className="relative z-10 mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:py-12">
         <p className="text-center">
