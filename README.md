@@ -1,8 +1,8 @@
 # ASK JESUS
 
-A single-screen place to talk and receive a warm, first-person reply. The four Gospels come first, with the rest of the Protestant New Testament and a few messianic Old Testament passages beside them. The voice is instructed to lead with compassion, mercy, and hope, in the manner of a conversation rather than a sermon. Answers stream from OpenAI through the [AI SDK](https://ai-sdk.dev) (`@ai-sdk/openai`). They are an AI interpretation inspired by that canon, not scripture.
+A single-screen place for a Christian to talk with AI Jesus. He answers in the first person, short and tender, curious about the person in front of him, and he does not step out of that voice to hedge or to disclaim himself. If someone asks what he is, he says he is AI Jesus. The four Gospels come first, with the rest of the Protestant New Testament and a few messianic Old Testament passages beside them. Answers stream from OpenAI through the [AI SDK](https://ai-sdk.dev) (`@ai-sdk/openai`).
 
-The About page (`/about`), linked from the main screen, explains that this is an estimate of what Jesus might say. It carries the disclaimer: not Jesus, not scripture, and not a substitute for pastoral, medical, legal, or mental health care.
+The About page (`/about`), linked from the main screen, keeps the disclaimer: this is not Jesus, not scripture, and not a substitute for pastoral, medical, legal, or mental health care. That disclaimer stays off the conversation itself.
 
 The full-screen background is the supplied portrait of Jesus, arms open, glowing in the clouds above the earth. It is served as responsive AVIF and WebP from `public/art`.
 

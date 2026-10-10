@@ -136,16 +136,14 @@
 :root {
   /* Crown of the head in the source portrait. Everything above it is sky
      and the lettering baked into the image. */
-  --head-top: 0.16;
+  --head-top: 0.15;
   /* Neck / upper chest, where the real title sits. */
-  --title-at: 0.47;
+  --title-at: 0.46;
   /* Just below the title, where the conversation begins. */
-  --chat-at: 0.55;
-  --img-ratio: 1.1148;
-  --img-h: max(
-    calc(100dvh / (1 - var(--head-top))),
-    calc(100vw * var(--img-ratio))
-  );
+  --chat-at: 0.53;
+  /* Tall enough to crop the sky, short enough that his chest stays
+     in the upper half and the conversation can fill the rest. */
+  --img-h: calc(100dvh / (1 - var(--head-top)));
 }
 
 .art-frame {
@@ -165,8 +163,9 @@
 
 .art-shift-blur {
   z-index: 0;
-  transform: translateX(-50%) scale(1.12);
-  filter: blur(42px);
+  transform-origin: center calc(var(--head-top) * 100%);
+  transform: translateX(-50%) scale(2.6);
+  filter: blur(36px);
 }
 
 .art-shift:not(.art-shift-blur) {
