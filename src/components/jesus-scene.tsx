@@ -8,15 +8,13 @@ function ArtPicture({
   className,
   alt,
   priority = false,
-  blur = false,
 }: {
   className: string;
   alt: string;
   priority?: boolean;
-  blur?: boolean;
 }) {
   return (
-    <picture className={blur ? "art-shift art-shift-blur" : "art-shift"}>
+    <picture className="art-shift">
       <source type="image/avif" srcSet={srcSet("avif")} sizes="100vw" />
       <source type="image/webp" srcSet={srcSet("webp")} sizes="100vw" />
       <img
@@ -32,12 +30,11 @@ function ArtPicture({
   );
 }
 
-/** Portrait anchored so the crown of his head meets the top of the screen. */
+/** Portrait scaled so both hands fit, with a little glow left above his hair. */
 export function JesusScene() {
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[#07080e]">
+    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-black">
       <div className="art-frame">
-        <ArtPicture blur alt="" className="art-photo" />
         <ArtPicture
           priority
           alt="Jesus with arms open, light shining through the clouds."
