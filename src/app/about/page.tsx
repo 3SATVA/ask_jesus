@@ -5,7 +5,7 @@ import { JesusScene } from "@/components/jesus-scene";
 export const metadata: Metadata = {
   title: "About — ASK JESUS",
   description:
-    "ASK JESUS is an AI that draws on the four Gospels and estimates what Jesus might say. It is not Jesus, and it is not scripture.",
+    "ASK JESUS is an AI that draws on the Protestant canon, with the Gospels first, and estimates what Jesus might say. It is not Jesus, and it is not scripture.",
 };
 
 const HELP = [
@@ -53,15 +53,24 @@ export default function AboutPage() {
             About
           </h1>
           <p className="mt-4 font-display text-xl leading-8 text-[#f7f1e4] italic">
-            A quiet estimate, drawn from the Gospels, of what Jesus might say.
+            A quiet conversation, drawn from Scripture, of what Jesus might say.
           </p>
           <div className="mt-5 space-y-4 text-[0.98rem] leading-7 text-[#f6efe2]">
             <p>
-              ASK JESUS is an AI. You type a question, and it answers in a
+              ASK JESUS is an AI. You talk with it, and it answers in a
               first-person voice, doing its best to estimate what Jesus might
-              say. It draws on the four Gospels — Matthew, Mark, Luke, and
-              John — the pages where his words, his meals, his healings, and
-              his way with people are written down.
+              say. The four Gospels — Matthew, Mark, Luke, and John — come
+              first. Those are the pages where his words, his meals, his
+              healings, and his way with people are written down.
+            </p>
+            <p>
+              It may also draw on the rest of the New Testament that
+              Protestants receive: Acts, the letters of Paul, Hebrews, 1 Peter,
+              1 John, and the words of the risen Christ in Revelation 1–3. From
+              the Old Testament it may use passages long read as pointing to
+              the Messiah, such as Isaiah 53, Isaiah 61:1–3, Psalm 22, and the
+              shepherd imagery of Psalm 23. It does not use books outside that
+              canon. There is no Gospel of Thomas here, and no other apocrypha.
             </p>
             <p>
               The hope is a tone of welcome: caring, forgiving, and full of
@@ -99,7 +108,7 @@ export default function AboutPage() {
             <li>
               <strong className="font-medium text-[#fff8e8]">Answers may be imperfect.</strong>{" "}
               A citation can be mistaken. A sentence can miss what you meant.
-              When that happens, let the Gospels themselves be the measure.
+              When that happens, let Scripture itself be the measure, especially the Gospels.
             </li>
             <li>
               <strong className="font-medium text-[#fff8e8]">

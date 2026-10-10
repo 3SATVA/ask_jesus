@@ -1,5 +1,5 @@
 import { openai } from "@ai-sdk/openai";
-import { createTextStreamResponse, streamText } from "ai";
+import { createTextStreamResponse, streamText, type ModelMessage } from "ai";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   INVALID_MESSAGE,
@@ -7,8 +7,8 @@ import {
   MISSING_KEY_MESSAGE,
   UPSTREAM_MESSAGE,
   decideAsk,
-  normalizeQuestion,
 } from "@/lib/ask";
+import { normalizeConversation } from "@/lib/conversation";
 import { crisisMessage } from "@/lib/crisis";
 import {
   dailyLimit,
@@ -16,7 +16,7 @@ import {
   openaiModel,
   supportUrl,
 } from "@/lib/config";
-import { JESUS_SYSTEM_PROMPT, questionPrompt } from "@/lib/prompt";
+import { JESUS_SYSTEM_PROMPT } from "@/lib/prompt";
 import { QUOTA_COOKIE, parseQuota, quotaSetCookie } from "@/lib/quota";
 
 export const maxDuration = 60;
@@ -76,11 +76,8 @@ export async function POST(request: NextRequest) {
     body = null;
   }
 
-  const question = normalizeQuestion(
-    body && typeof body === "object" && "question" in body
-      ? (body as { question?: unknown }).question
-      : null,
-  );
+  const conversation = normalizeConversation(body);
+  const question = conversation?.question ?? null;
   const used = parseQuota(request.cookies.get(QUOTA_COOKIE)?.value);
   const limit = dailyLimit();
   const decision = decideAsk({
@@ -108,16 +105,23 @@ export async function POST(request: NextRequest) {
     return jsonError(503, "missing_key", MISSING_KEY_MESSAGE, used);
   }
 
-  if (!question) {
+  if (!conversation) {
     return jsonError(400, "invalid", INVALID_MESSAGE, used);
   }
 
   const nextUsed = used + 1;
+  const messages: ModelMessage[] = [
+    ...conversation.history,
+    { role: "user", content: conversation.question },
+  ];
   const result = streamText({
     model: openai(openaiModel()),
     instructions: JESUS_SYSTEM_PROMPT,
-    prompt: questionPrompt(question),
-    maxOutputTokens: 700,
+    messages,
+    maxOutputTokens: 420,
+    providerOptions: {
+      openai: { reasoningEffort: "low" },
+    },
     maxRetries: 1,
     abortSignal: request.signal,
     onError({ error }) {

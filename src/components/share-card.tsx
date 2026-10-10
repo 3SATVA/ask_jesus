@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Copy, Download, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ReplyText } from "@/components/reply-text";
 import {
   Dialog,
   DialogContent,
@@ -10,12 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-const DISCLAIMER =
-  "Answers are an AI interpretation inspired by the Gospels, not scripture.";
+import { DISCLAIMER } from "@/lib/messages";
+import { replyToPlainText } from "@/lib/scripture";
 
 function shareText(question: string, answer: string) {
-  return `ASK JESUS\n\n${question}\n\n${answer}\n\n${DISCLAIMER}`;
+  return `ASK JESUS\n\n${question}\n\n${replyToPlainText(answer)}\n\n${DISCLAIMER}`;
 }
 
 function wrapLines(
@@ -115,7 +115,7 @@ async function renderCard(question: string, answer: string) {
   ctx.textAlign = "left";
   ctx.fillStyle = "#f6efe2";
   ctx.font = `500 36px ${display}`;
-  const answerLines = wrapLines(ctx, answer, 860, 16);
+  const answerLines = wrapLines(ctx, replyToPlainText(answer), 860, 16);
   for (const line of answerLines) {
     if (!line) {
       y += 18;
@@ -227,9 +227,9 @@ export function ShareCard({
           <p className="mt-4 font-display text-lg italic leading-snug text-[#f7f1e4]">
             {question}
           </p>
-          <p className="mt-4 text-left font-display text-base leading-7 whitespace-pre-wrap text-[#f6efe2]">
-            {answer}
-          </p>
+          <div className="mt-4 text-left font-display text-base leading-7 text-[#f6efe2]">
+            <ReplyText text={answer} />
+          </div>
           <p className="mt-5 text-xs leading-5 text-[#cbbfa8]">{DISCLAIMER}</p>
         </article>
 
