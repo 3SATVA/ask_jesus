@@ -137,10 +137,9 @@
   /* Crown of the head in the source portrait. Everything above it is sky
      and the lettering baked into the image. */
   --head-top: 0.15;
-  /* Neck / upper chest, where the real title sits. */
-  --title-at: 0.46;
-  /* Just below the title, where the conversation begins. */
-  --chat-at: 0.53;
+  /* Just under the chin. The title's top edge sits on this line. */
+  --chin-at: 0.44;
+  --title-size: clamp(1.15rem, 12.2vw, 3.45rem);
   /* Tall enough to crop the sky, short enough that his chest stays
      in the upper half and the conversation can fill the rest. */
   --img-h: calc(100dvh / (1 - var(--head-top)));
@@ -183,7 +182,7 @@
 .chat-dock {
   position: absolute;
   z-index: 10;
-  top: calc((var(--chat-at) - var(--head-top)) * var(--img-h));
+  top: calc((var(--chin-at) - var(--head-top)) * var(--img-h) + var(--title-size) + 0.2rem);
   right: 0;
   bottom: 0;
   left: 0;
@@ -218,10 +217,14 @@
 .ask-title {
   position: absolute;
   z-index: 20;
-  top: calc((var(--title-at) - var(--head-top)) * var(--img-h));
+  top: calc((var(--chin-at) - var(--head-top)) * var(--img-h));
   left: 50%;
-  max-width: 92vw;
-  transform: translate(-50%, -50%);
+  width: max-content;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: var(--title-size);
+  line-height: 1;
+  letter-spacing: 0.14em;
   color: #f7f0e4;
   -webkit-text-stroke: 0.4px rgba(40, 22, 8, 0.35);
   text-shadow:
@@ -394,6 +397,12 @@
   50.01%,
   100% {
     opacity: 0;
+  }
+}
+
+@media (min-width: 640px) {
+  .ask-title {
+    letter-spacing: 0.2em;
   }
 }
 
