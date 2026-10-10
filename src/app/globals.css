@@ -133,39 +133,75 @@
   }
 }
 
+:root {
+  /* Crown of the head in the source portrait. Everything above it is sky
+     and the lettering baked into the image. */
+  --head-top: 0.15;
+  /* Just under the chin. The title's top edge sits on this line. */
+  --chin-at: 0.44;
+  --title-size: clamp(1.15rem, 12.2vw, 3.45rem);
+  /* Tall enough to crop the sky, short enough that his chest stays
+     in the upper half and the conversation can fill the rest. */
+  --img-h: calc(100dvh / (1 - var(--head-top)));
+}
+
 .art-frame {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  overflow: hidden;
+}
+
+.art-shift {
+  position: absolute;
+  top: calc(var(--head-top) * var(--img-h) * -1);
+  left: 50%;
+  height: var(--img-h);
+  width: calc(var(--img-h) * 1952 / 2176);
+  transform: translateX(-50%);
+}
+
+.art-shift-blur {
+  z-index: 0;
+  transform-origin: center calc(var(--head-top) * 100%);
+  transform: translateX(-50%) scale(2.6);
+  filter: blur(36px);
+}
+
+.art-shift:not(.art-shift-blur) {
+  z-index: 1;
 }
 
 .art-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
   object-fit: cover;
-  object-position: center center;
 }
 
 .chat-dock {
-  --chat-max: 44dvh;
   position: absolute;
   z-index: 10;
-  left: 50%;
+  top: calc((var(--chin-at) - var(--head-top)) * var(--img-h) + var(--title-size) + 0.2rem);
+  right: 0;
   bottom: 0;
+  left: 0;
   display: flex;
   width: min(92vw, 36rem);
-  max-height: var(--chat-max);
+  margin-inline: auto;
   min-height: 0;
-  transform: translateX(-50%);
   flex-direction: column;
-  justify-content: flex-end;
   overflow: hidden;
   pointer-events: none;
 }
 
 .chat-column {
+  display: flex;
   width: 100%;
+  height: 100%;
   min-height: 0;
-  max-height: var(--chat-max);
+  flex: 1 1 auto;
+  flex-direction: column;
   overflow: hidden;
   pointer-events: auto;
 }
@@ -180,10 +216,15 @@
 
 .ask-title {
   position: absolute;
-  z-index: 10;
-  top: max(0.75rem, env(safe-area-inset-top));
+  z-index: 20;
+  top: calc((var(--chin-at) - var(--head-top)) * var(--img-h));
   left: 50%;
+  width: max-content;
   transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: var(--title-size);
+  line-height: 1;
+  letter-spacing: 0.14em;
   color: #f7f0e4;
   -webkit-text-stroke: 0.4px rgba(40, 22, 8, 0.35);
   text-shadow:
@@ -359,27 +400,15 @@
   }
 }
 
-@media (min-aspect-ratio: 1952/2176) {
-  /* Wide screens crop sky and earth. Bias upward so the title
-     sits in the clouds and the face and outstretched arms stay in frame. */
-  .art-photo {
-    object-position: center 8%;
-  }
-
-  /* The crop puts his face lower in the frame, so the thread stays shorter. */
-  .chat-dock {
-    --chat-max: 32dvh;
-    width: min(40rem, 56vw);
+@media (min-width: 640px) {
+  .ask-title {
+    letter-spacing: 0.2em;
   }
 }
 
-@media (max-height: 520px) and (min-aspect-ratio: 1/1) {
-  .art-photo {
-    object-position: center 24%;
-  }
-
+@media (min-aspect-ratio: 1952/2176) {
   .chat-dock {
-    --chat-max: 30dvh;
+    width: min(40rem, 56vw);
   }
 }
 

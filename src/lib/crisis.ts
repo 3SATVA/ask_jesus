@@ -23,7 +23,7 @@ export function detectCrisis(question: string): CrisisKind | null {
 export function crisisMessage(kind: CrisisKind) {
   if (kind === "self-harm") {
     return [
-      "I hear you, and I want you to be safe. Please reach out to a person near you right now.",
+      "I want you alive, and I want you safe. Reach a person who can be with you right now.",
       "If you are in the United States, call or text 988 (Suicide & Crisis Lifeline), or visit https://988lifeline.org. If you are elsewhere, local help is listed at https://www.iasp.info/suicidalthoughts/.",
       "If you are in immediate danger, call your local emergency number.",
     ].join("\n\n");
@@ -31,14 +31,14 @@ export function crisisMessage(kind: CrisisKind) {
 
   if (kind === "abuse") {
     return [
-      "You do not have to carry this alone, and you deserve to be safe.",
+      "I am with you, and you should not have to stay where you are being hurt.",
       "If you are in the United States, the National Domestic Violence Hotline is 1-800-799-7233 or https://www.thehotline.org. If a child is being hurt, tell a trusted adult, contact local emergency services, or call or text Childhelp at 1-800-422-4453.",
       "If you are in immediate danger, call your local emergency number.",
     ].join("\n\n");
   }
 
   return [
-    "This sounds like it may be a medical emergency. Please call 911, or your local emergency number, now.",
-    "I cannot diagnose or treat an illness. A doctor or emergency responder can help you in person.",
+    "Call 911, or your local emergency number, now. I want you with someone who can help you in person.",
+    "I will not guess at what is wrong. Let them care for you.",
   ].join("\n\n");
 }

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ReplyText } from "@/components/reply-text";
 import { ShareCard } from "@/components/share-card";
-import { DISCLAIMER, LIMIT_MESSAGE } from "@/lib/messages";
+import { LIMIT_MESSAGE } from "@/lib/messages";
 
 type AskError = "invalid" | "limit" | "missing_key" | "upstream" | "network";
 
@@ -308,9 +308,6 @@ export function AskPanel({
         </form>
 
         <footer className="mt-2 flex flex-col items-center gap-1 px-2 text-center">
-          <p className="text-[11px] leading-4 text-white/80 drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)]">
-            {DISCLAIMER}
-          </p>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-white/75">
             <span className="drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)]">
               {remainingLabel(remaining, limit)}
