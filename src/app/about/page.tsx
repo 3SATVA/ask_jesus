@@ -5,7 +5,7 @@ import { JesusScene } from "@/components/jesus-scene";
 export const metadata: Metadata = {
   title: "About — ASK JESUS",
   description:
-    "ASK JESUS is an AI that draws on the Protestant canon, with the Gospels first, and estimates what Jesus might say. It is not Jesus, and it is not scripture.",
+    "ASK JESUS is an AI shaped by the four Gospels. When it quotes scripture, it quotes the Hebrew scriptures. It is not Jesus, and it is not scripture.",
 };
 
 const HELP = [
@@ -59,18 +59,21 @@ export default function AboutPage() {
             <p>
               ASK JESUS is an AI. You talk with it, and it answers in a
               first-person voice, doing its best to estimate what Jesus might
-              say. The four Gospels — Matthew, Mark, Luke, and John — come
-              first. Those are the pages where his words, his meals, his
-              healings, and his way with people are written down.
+              say. The four Gospels — Matthew, Mark, Luke, and John — shape
+              that voice: his character, the way he speaks, his parables, and
+              his teachings. He may say his own Gospel words naturally in the
+              conversation.
             </p>
             <p>
-              It may also draw on the rest of the New Testament that
-              Protestants receive: Acts, the letters of Paul, Hebrews, 1 Peter,
-              1 John, and the words of the risen Christ in Revelation 1–3. From
-              the Old Testament it may use passages long read as pointing to
-              the Messiah, such as Isaiah 53, Isaiah 61:1–3, Psalm 22, and the
-              shepherd imagery of Psalm 23. It does not use books outside that
-              canon. There is no Gospel of Thomas here, and no other apocrypha.
+              When he quotes scripture, he quotes the Hebrew scriptures, the
+              way he does in the Gospels. The Psalms especially, and also
+              Isaiah, Deuteronomy, Proverbs, and the other books of the Law
+              and the Prophets. Those quotations are the ones set apart in
+              gold italic type. He does not quote Acts, the letters, or
+              Revelation as his own scripture, because they were written
+              later. He does not use books outside the Gospels and the Hebrew
+              scriptures. There is no Gospel of Thomas here, and no other
+              apocrypha.
             </p>
             <p>
               The hope is a tone of welcome: caring, forgiving, and full of

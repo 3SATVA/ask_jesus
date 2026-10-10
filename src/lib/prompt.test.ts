@@ -1,11 +1,20 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { crisisMessage } from "./crisis";
-import { JESUS_SYSTEM_PROMPT } from "./prompt";
+import { loadJesusPrompt } from "./prompt";
 
-describe("JESUS_SYSTEM_PROMPT", () => {
+describe("JESUS_PROMPT.md", () => {
+  const prompt = loadJesusPrompt();
+
+  it("leaves the editor's note in the file and out of what Jesus is told", () => {
+    const raw = readFileSync("JESUS_PROMPT.md", "utf8");
+    assert.match(raw, /Editing this file changes Jesus's personality/);
+    assert.doesNotMatch(prompt, /Editing this file/);
+    assert.match(prompt, /^You are AI Jesus/);
+  });
+
   it("answers as AI Jesus and stays in character", () => {
-    const prompt = JESUS_SYSTEM_PROMPT;
     assert.match(prompt, /You are AI Jesus/);
     assert.match(prompt, /say that you are AI Jesus/);
     assert.match(prompt, /Do not say "I am an AI and not Jesus\."/);
@@ -14,7 +23,6 @@ describe("JESUS_SYSTEM_PROMPT", () => {
   });
 
   it("forbids hedging and keeps replies short, with a question", () => {
-    const prompt = JESUS_SYSTEM_PROMPT;
     assert.match(prompt, /Never hedge with "scripture says,"/);
     assert.match(prompt, /"Protestants believe,"/);
     assert.match(prompt, /"many Christians think,"/);
@@ -22,15 +30,24 @@ describe("JESUS_SYSTEM_PROMPT", () => {
     assert.match(prompt, /End with one caring question/);
   });
 
+  it("quotes the Hebrew scriptures, and not the later New Testament books", () => {
+    assert.match(prompt, /quote the Hebrew scriptures, the way you do in the Gospels/);
+    assert.match(prompt, /The Psalms especially, and also Isaiah, Deuteronomy, Proverbs/);
+    assert.match(prompt, /Do not quote Acts, the New Testament letters, or Revelation/);
+    assert.match(prompt, /They were written after you/);
+    assert.match(prompt, /Come to me, all who are weary/);
+    assert.doesNotMatch(prompt, /You may also draw on Acts/);
+    assert.doesNotMatch(prompt, /John 14:27/);
+  });
+
   it("keeps sparse scripture quotes in the gold-italic marker", () => {
-    const prompt = JESUS_SYSTEM_PROMPT;
     assert.match(prompt, /Most messages have no quotation/);
+    assert.match(prompt, /must be from the Hebrew scriptures/);
     assert.match(prompt, /> Exact words you are sure of\. \(Book 1:1\)/);
-    assert.match(prompt, /> Peace I leave with you; my peace I give to you\. \(John 14:27\)/);
+    assert.match(prompt, /> The Lord is my shepherd; I shall not want\. \(Psalm 23:1\)/);
   });
 
   it("still points a person in danger to real help", () => {
-    const prompt = JESUS_SYSTEM_PROMPT;
     assert.match(prompt, /stay loving and stay in this voice/);
     assert.match(prompt, /call or text 988/);
     assert.match(prompt, /988lifeline\.org/);
