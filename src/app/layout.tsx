@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cinzel, Cormorant_Garamond, Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -30,6 +30,13 @@ function metadataBase() {
   }
   return new URL("http://localhost:43123");
 }
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+};
 
 export const metadata: Metadata = {
   metadataBase: metadataBase(),
@@ -67,7 +74,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           imageSizes="100vw"
         />
       </head>
-      <body className="min-h-dvh bg-black text-[#f6efe2]">{children}</body>
+      <body className="bg-black text-[#f6efe2]">{children}</body>
     </html>
   );
 }
