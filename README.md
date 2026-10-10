@@ -1,6 +1,8 @@
 # ASK JESUS
 
-A single-screen place for a Christian to talk with AI Jesus. He answers in the first person, short and tender, curious about the person in front of him, and he does not step out of that voice to hedge or to disclaim himself. If someone asks what he is, he says he is AI Jesus. The four Gospels come first, with the rest of the Protestant New Testament and a few messianic Old Testament passages beside them. Answers stream from OpenAI through the [AI SDK](https://ai-sdk.dev) (`@ai-sdk/openai`).
+A single-screen place for a Christian to talk with AI Jesus. He answers in the first person, short and tender, curious about the person in front of him, and he does not step out of that voice to hedge or to disclaim himself. If someone asks what he is, he says he is AI Jesus. The four Gospels shape how he speaks. When he quotes scripture, he quotes the Hebrew scriptures — the Psalms, Isaiah, Deuteronomy, Proverbs, and the other books he quotes in the Gospels. He does not quote Acts, the letters, or Revelation as his own scripture. Answers stream from OpenAI through the [AI SDK](https://ai-sdk.dev) (`@ai-sdk/openai`).
+
+His personality is the plain text in `JESUS_PROMPT.md`, at the root of this repo. Edit that file to change how he speaks. You do not need to change any code. The note at the top of the file is for the editor and is not sent to the model. A new build and deploy picks up the edit. Crisis detection, and the replies that name 988, the abuse hotlines, or 911, stay in the server code.
 
 The About page (`/about`), linked from the main screen, keeps the disclaimer: this is not Jesus, not scripture, and not a substitute for pastoral, medical, legal, or mental health care. That disclaimer stays off the conversation itself.
 
@@ -46,7 +48,7 @@ Changing `NEXT_PUBLIC_*` values requires a new build.
 3. If `OPENAI_API_KEY` is not configured, it returns a clear error.
 4. Otherwise it streams a reply with `streamText` from the AI SDK and the OpenAI provider. The recent conversation is sent with the new question, so the reply can remember what was already said. Only the new question counts against the daily limit. The browser keeps the current conversation in `localStorage`. GPT-6 models, including the default, do not accept a temperature setting, so the request does not send one.
 
-A scripture quotation is marked on its own line as `> Exact words. (Book 1:1)`. The chat renders that line in italic gold, with the reference beside it.
+A scripture quotation is marked on its own line as `> Exact words. (Book 1:1)`. The chat renders that line in italic gold, with the reference beside it. Those marked quotations are from the Hebrew scriptures. Gospel sentences stay in his own voice and are not marked that way.
 
 `GET /api/ask` returns how many questions are left today.
 
