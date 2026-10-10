@@ -1,5 +1,5 @@
 export const MISSING_KEY_MESSAGE =
-  "Add AI_GATEWAY_API_KEY to the server environment to receive answers. On Vercel, a deployment can use that key or Vercel OIDC instead. See the README.";
+  "Add OPENAI_API_KEY to the server environment to receive answers. See the README.";
 
 export const LIMIT_MESSAGE =
   "You have reached today’s free questions. Come back tomorrow — and if this ministry has been a help, you are welcome to support it.";
