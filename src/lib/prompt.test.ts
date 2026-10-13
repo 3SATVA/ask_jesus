@@ -29,12 +29,20 @@ describe("JESUS_PROMPT.md", () => {
     assert.match(prompt, /usually one or two sentences/);
   });
 
-  it("paces a back-and-forth instead of a speech", () => {
+  it("speaks simply, mirrors them, and stays concrete", () => {
+    assert.match(prompt, /very relatable, simple, persuasive, loving, modern language/);
+    assert.match(prompt, /caring older brother or father/);
+    assert.match(prompt, /Mirror the person's own speaking style/);
+    assert.match(prompt, /Never vague, abstract, or opaque/);
+    assert.match(prompt, /Be concrete and clear/);
+  });
+
+  it("paces a back-and-forth and quotes scripture by the second reply", () => {
     assert.match(prompt, /a guide, not a script/);
     assert.match(prompt, /Do not force the steps/);
     assert.match(prompt, /one short, loving question/);
     assert.match(prompt, /words of love and healing/);
-    assert.match(prompt, /Only once you understand the situation/);
+    assert.match(prompt, /By your second reply at the latest/);
     assert.match(prompt, /one Psalm or other Old Testament quotation/);
     assert.match(prompt, /That is not the end of the conversation/);
     assert.match(prompt, /how it lands, or what step feels possible/);
@@ -42,6 +50,8 @@ describe("JESUS_PROMPT.md", () => {
     assert.match(prompt, /do not reply with only a question/);
     assert.match(prompt, /When this is their last message today, close warmly/);
     assert.match(prompt, /do not ask a question that needs a reply/);
+    assert.doesNotMatch(prompt, /No quotation yet/);
+    assert.doesNotMatch(prompt, /do not quote before you understand them/);
   });
 
   it("tells him how many messages remain, and which one is the last", () => {
@@ -78,7 +88,8 @@ describe("JESUS_PROMPT.md", () => {
   });
 
   it("keeps sparse scripture quotes in the gold-italic marker", () => {
-    assert.match(prompt, /Most messages have no quotation/);
+    assert.match(prompt, /by your second reply at the latest/);
+    assert.match(prompt, /Do not quote in every reply/);
     assert.match(prompt, /must be from the Hebrew scriptures/);
     assert.match(prompt, /> Exact words you are sure of\. \(Book 1:1\)/);
     assert.match(prompt, /> The Lord is my shepherd; I shall not want\. \(Psalm 23:1\)/);

@@ -16,6 +16,11 @@ type ChatMessage = {
 };
 
 const STORAGE_KEY = "ask_jesus_conversation";
+const OPENING_TEXT = "My child, tell me what is on your mind?";
+
+function openingMessage(): ChatMessage {
+  return { id: "opening", role: "jesus", text: OPENING_TEXT };
+}
 
 function isChatMessage(value: unknown): value is ChatMessage {
   if (!value || typeof value !== "object") return false;
@@ -56,7 +61,7 @@ export function AskPanel({
   initialLimit: number;
 }) {
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [openingMessage()]);
   const [hydrated, setHydrated] = useState(false);
   const [status, setStatus] = useState<"idle" | "streaming" | "done" | "error">(
     "idle",
@@ -68,7 +73,8 @@ export function AskPanel({
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMessages(loadMessages());
+    const stored = loadMessages();
+    setMessages(stored.length > 0 ? stored : [openingMessage()]);
     setHydrated(true);
   }, []);
 
@@ -196,7 +202,7 @@ export function AskPanel({
 
   function startFresh() {
     if (streaming) return;
-    setMessages([]);
+    setMessages([openingMessage()]);
     setQuestion("");
     setError("");
     setStatus("idle");
@@ -207,8 +213,6 @@ export function AskPanel({
     event.preventDefault();
     setSupportNote(true);
   }
-
-  const showAsk = streaming || question.trim().length > 0;
 
   return (
     <div className="chat-column flex min-h-0 w-full flex-col px-3">
@@ -263,7 +267,6 @@ export function AskPanel({
               value={question}
               rows={1}
               maxLength={600}
-              placeholder={hasConversation ? "Say a little more…" : "What is on your heart?"}
               disabled={streaming || atLimit}
               className="prompt-input max-h-24 min-h-0 flex-1 resize-none border-0 bg-transparent px-1 py-1 text-[16px] text-[#f4f7fb] shadow-none placeholder:text-[#b7c0ca] focus-visible:ring-0 md:text-[16px]"
               onChange={(event) => setQuestion(event.target.value)}
@@ -277,7 +280,7 @@ export function AskPanel({
             <Button
               type="submit"
               disabled={!canAsk}
-              className={showAsk ? "h-9 shrink-0 px-3" : "sr-only"}
+              className="h-9 shrink-0 px-3"
             >
               {streaming ? "Listening…" : "Ask"}
             </Button>

@@ -20,6 +20,21 @@ describe("normalizeConversation", () => {
     });
   });
 
+  it("keeps the opening greeting in history and does not count it as a question", () => {
+    const parsed = normalizeConversation({
+      messages: [
+        { role: "assistant", content: "My child, tell me what is on your mind?" },
+        { role: "user", content: "I cannot sleep." },
+      ],
+    });
+    assert.deepEqual(parsed, {
+      question: "I cannot sleep.",
+      history: [
+        { role: "assistant", content: "My child, tell me what is on your mind?" },
+      ],
+    });
+  });
+
   it("still accepts a single question with no history", () => {
     assert.deepEqual(normalizeConversation({ question: "How do I forgive?" }), {
       question: "How do I forgive?",
