@@ -101,25 +101,23 @@ jobs:
           </dict>
           </plist>
           EOF
-          # Auth flags belong before the action. The shared scheme is App.
-          # Apple Distribution creates an App Store profile. A development profile
-          # cannot be created for this team because it has no registered devices.
-          XCODE_SIGN=(
-            -authenticationKeyPath "$KEY_PATH"
-            -authenticationKeyID "$ASC_KEY_ID"
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
-            -allowProvisioningUpdates
+          # Automatic signing during archive asks for an iOS App Development profile.
+          # This team has no registered devices, so that profile cannot be created,
+          # and an Apple Distribution identity conflicts with automatic development signing.
+          # The archive is unsigned. Export creates the App Store profile with the API key.
+          XCODE_ARCHIVE=(
+            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGN_IDENTITY=""
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
-            CODE_SIGN_STYLE=Automatic
-            "CODE_SIGN_IDENTITY=Apple Distribution"
             IPHONEOS_DEPLOYMENT_TARGET=15.0
           )
           if [ -d ios/App/App.xcworkspace ]; then
-            xcodebuild "${XCODE_SIGN[@]}" -workspace ios/App/App.xcworkspace -scheme App \
+            xcodebuild "${XCODE_ARCHIVE[@]}" -workspace ios/App/App.xcworkspace -scheme App \
               -configuration Release -destination 'generic/platform=iOS' \
               -archivePath "$RUNNER_TEMP/App.xcarchive" archive
           else
-            xcodebuild "${XCODE_SIGN[@]}" -project ios/App/App.xcodeproj -scheme App \
+            xcodebuild "${XCODE_ARCHIVE[@]}" -project ios/App/App.xcodeproj -scheme App \
               -configuration Release -destination 'generic/platform=iOS' \
               -archivePath "$RUNNER_TEMP/App.xcarchive" archive
           fi
