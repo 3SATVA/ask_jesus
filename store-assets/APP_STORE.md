@@ -26,7 +26,7 @@ Do not run the TestFlight workflow until the steps at the bottom are done.
 
 Ask Jesus AI is a quiet place to talk. You write what is on your mind. The reply is short, in the first person, shaped by the four Gospels. When it quotes scripture, it quotes the Hebrew scriptures, especially the Psalms.
 
-Ten messages a day are free. On this iOS app, Unlimited today opens the rest of the day for $2.99, and a monthly subscription keeps every day open for $12.99. Those are purchased from Apple, inside the app. A day pass or subscription includes 300 messages each UTC day.
+Ten messages a day are free. On this iOS app, Unlimited today opens the rest of the day for $0.99, and a monthly subscription keeps every day open for $6.99. Those are purchased from Apple, inside the app. A day pass or subscription includes 300 messages each UTC day.
 
 This is not Jesus, and it is not scripture. It is not a pastor, a doctor, or a counselor. If you may be in danger, the app points you to real help, including 988 in the United States.
 
@@ -39,7 +39,7 @@ Terms of use: https://ask-jesus-lake.vercel.app/terms
 
 ### Promotional text
 
-Ten free messages a day. Unlimited today is $2.99. A month is $12.99.
+Ten free messages a day. Unlimited today is $0.99. A month is $6.99.
 
 ### Age rating notes
 
@@ -68,8 +68,8 @@ Subscription group reference name: `Ask Jesus Unlimited`
 
 | Product ID | Type | Price | What it unlocks | Reference name |
 | --- | --- | --- | --- | --- |
-| `com.starseedsquad.askjesus.unlimited.today` | Consumable | $2.99 | Messages until midnight UTC on the day it is bought, up to 300 that day | Unlimited today |
-| `com.starseedsquad.askjesus.unlimited.monthly` | Auto-renewable subscription, 1 month | $12.99 | Messages until the period ends, up to 300 each UTC day | Monthly |
+| `com.starseedsquad.askjesus.unlimited.today` | Consumable | $0.99 | Messages until midnight UTC on the day it is bought, up to 300 that day | Unlimited today |
+| `com.starseedsquad.askjesus.unlimited.monthly` | Auto-renewable subscription, 1 month | $6.99 | Messages until the period ends, up to 300 each UTC day | Monthly |
 
 Display name for the consumable: `Unlimited today`
 Consumable description: `Messages until midnight UTC on the day you buy it, up to 300 that day.`
@@ -128,13 +128,13 @@ The App Store icon is `store-assets/ask-jesus-ios-1024.png`, copied into the iOS
 7. Copy the numeric Apple ID from App Information into the server variable `APPLE_APP_APPLE_ID`.
 8. Fill App Information with the category, the 12+ age rating from the notes above, and the privacy policy URL `https://ask-jesus-lake.vercel.app/privacy`.
 9. App Privacy: answer from the section above.
-10. In-App Purchases: create the subscription group `Ask Jesus Unlimited`, then the monthly subscription at $12.99 and the Unlimited today consumable at $2.99, using the product IDs in the table. Add the English display names and descriptions. Turn Family Sharing off. Add a review screenshot of the paywall for each product.
+10. In-App Purchases: create the subscription group `Ask Jesus Unlimited`, then the monthly subscription at $6.99 and the Unlimited today consumable at $0.99, using the product IDs in the table. Add the English display names and descriptions. Turn Family Sharing off. Add a review screenshot of the paywall for each product.
 11. Pricing: base country United States, prices in the table.
 12. Prepare the version 1.0 page: paste the description, subtitle, keywords, support URL, and marketing URL from this file. Upload iPhone screenshots (6.7-inch is required). Choose the build after TestFlight finishes processing.
 13. Deploy this website first, so the shell loads the paywall and the privacy and terms pages.
 14. On GitHub, open Actions → iOS TestFlight → Run workflow. Do this only after steps 3 and 6. The workflow archives with automatic signing and uploads to TestFlight. It does not submit for review.
 15. In TestFlight, wait for processing, answer export compliance if asked (the app only uses exempt HTTPS encryption), and add an internal tester. Create a Sandbox Apple ID under Users and Access → Sandbox to buy Unlimited today and the monthly subscription.
-16. In the version’s Review Notes, tell the reviewer: no account is required; tap Support, or send 10 messages, to open the paywall; Unlimited today is a $2.99 consumable for the rest of that UTC day; the subscription is $12.99 a month; both include a fair-use cap of 300 messages per UTC day; purchases stay inside Apple; a Sandbox account is attached.
+16. In the version’s Review Notes, tell the reviewer: no account is required; tap Support, or send 10 messages, to open the paywall; Unlimited today is a $0.99 consumable for the rest of that UTC day; the subscription is $6.99 a month; both include a fair-use cap of 300 messages per UTC day; purchases stay inside Apple; a Sandbox account is attached.
 17. Select the build and submit for review when the sandbox purchases succeed.
 
 The shell is a WebView of this site plus StoreKit. Apple sometimes rejects a thin website wrapper. The native piece they are reviewing is the purchase flow. If review asks for more native behavior, that is a follow-up, not something this workflow can invent.

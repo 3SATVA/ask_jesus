@@ -8,15 +8,15 @@ export const IOS_BUNDLE_ID = "com.starseedsquad.askjesus";
  */
 export const DAY_PASS = {
   id: "com.starseedsquad.askjesus.unlimited.today",
-  fallbackPrice: "$2.99",
+  fallbackPrice: "$0.99",
   title: "Unlimited today",
   detail: "Unlimited messages until midnight UTC",
 } as const;
 
-/** Auto-renewable monthly subscription. Suggested price: $12.99 per month. */
+/** Auto-renewable monthly subscription. Suggested price: $6.99 per month. */
 export const MONTHLY_PRODUCT = {
   id: "com.starseedsquad.askjesus.unlimited.monthly",
-  fallbackPrice: "$12.99/month",
+  fallbackPrice: "$6.99/month",
   title: "Monthly",
   detail: "Unlimited messages, renewing every month",
 } as const;
