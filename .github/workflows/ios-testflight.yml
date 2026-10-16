@@ -175,6 +175,14 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
           IPA="$(find "$RUNNER_TEMP/ios-export" -name '*.ipa' -print -quit)"
           echo "Uploading $IPA"
-          # Xcode 26's altool fails to build the App Store Connect JWT. Transporter
-          # accepts the same API key files already written under ~/private_keys.
-          xcrun iTMSTransporter -m upload -assetFile "$IPA" -apiKey "$ASC_KEY_ID" -apiIssuer "$ASC_ISSUER_ID"
+          # Xcode 26's xcrun iTMSTransporter is only a stub ("now part of Transporter").
+          # Xcode 16.4's altool already authenticated this API key and reached Apple's
+          # upload validator. The IPA itself was built with the iOS 26 SDK above.
+          if [ -x /Applications/Transporter.app/Contents/itms/bin/iTMSTransporter ]; then
+            /Applications/Transporter.app/Contents/itms/bin/iTMSTransporter \
+              -m upload -assetFile "$IPA" -apiKey "$ASC_KEY_ID" -apiIssuer "$ASC_ISSUER_ID"
+          else
+            DEVELOPER_DIR=/Applications/Xcode_16.4.app/Contents/Developer \
+              xcrun altool --upload-app --file "$IPA" --type ios \
+              --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          fi
