@@ -168,6 +168,53 @@ jobs:
               exit 1
               ;;
           esac
+          verify_app_icon() {
+            local APP="$1"
+            echo "Checking app icon in $APP"
+            ls -la "$APP/Assets.car" "$APP"/AppIcon*.png || true
+            echo "CFBundleIcons:"
+            if ! /usr/libexec/PlistBuddy -c 'Print :CFBundleIcons' "$APP/Info.plist"; then
+              echo "CFBundleIcons is missing from the built Info.plist"
+              plutil -p "$APP/Info.plist" || true
+              exit 1
+            fi
+            /usr/libexec/PlistBuddy -c 'Print :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconName' "$APP/Info.plist"
+            if [ -x /usr/bin/assetutil ]; then
+              /usr/bin/assetutil --info "$APP/Assets.car" > "$RUNNER_TEMP/assets-car.json"
+            else
+              xcrun assetutil --info "$APP/Assets.car" > "$RUNNER_TEMP/assets-car.json"
+            fi
+            python3 - "$RUNNER_TEMP/assets-car.json" << 'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1]))
+          if isinstance(data, dict):
+              data = data.get("Assets") or data.get("assets") or [data]
+          icons = []
+          for item in data:
+              if not isinstance(item, dict):
+                  continue
+              kind = str(item.get("AssetType", ""))
+              name = str(item.get("Name", ""))
+              if "Icon" in kind or name == "AppIcon":
+                  icons.append(item)
+          print(f"Assets.car icon entries: {len(icons)}")
+          large = []
+          for item in icons:
+              width = int(item.get("PixelWidth") or 0)
+              height = int(item.get("PixelHeight") or 0)
+              if width or height:
+                  print(
+                      f"  {item.get('Name')} {item.get('Idiom')} "
+                      f"{width}x{height} scale={item.get('Scale')} "
+                      f"opaque={item.get('Opaque')} type={item.get('AssetType')}"
+                  )
+              if width >= 180 and height >= 180 and item.get("Opaque") is not False:
+                  large.append(item)
+          if not large:
+              raise SystemExit("Assets.car has no opaque AppIcon rendition at 180px or larger")
+          PY
+          }
+          verify_app_icon "$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportPath "$RUNNER_TEMP/ios-export" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
             -allowProvisioningUpdates \
@@ -175,6 +222,10 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
           IPA="$(find "$RUNNER_TEMP/ios-export" -name '*.ipa' -print -quit)"
           echo "Uploading $IPA"
+          rm -rf "$RUNNER_TEMP/ipa-check"
+          mkdir -p "$RUNNER_TEMP/ipa-check"
+          unzip -q "$IPA" -d "$RUNNER_TEMP/ipa-check"
+          verify_app_icon "$RUNNER_TEMP/ipa-check/Payload/App.app"
           # Xcode 26's xcrun iTMSTransporter is only a stub ("now part of Transporter").
           # Xcode 16.4's altool already authenticated this API key and reached Apple's
           # upload validator. The IPA itself was built with the iOS 26 SDK above.
