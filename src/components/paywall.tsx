@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DAY_PASS, MONTHLY_PRODUCT } from "@/lib/products";
+import { catalogFor, type StoreName } from "@/lib/products";
 import {
   loadStorePrices,
   manageSubscriptions,
@@ -22,6 +22,7 @@ import {
 export function Paywall({
   open,
   reason,
+  store,
   unlimitedCap,
   subscriptionActive,
   onOpenChange,
@@ -29,6 +30,7 @@ export function Paywall({
 }: {
   open: boolean;
   reason: "limit" | "support";
+  store: StoreName;
   unlimitedCap: number;
   subscriptionActive: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,13 +43,13 @@ export function Paywall({
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    loadStorePrices().then((next) => {
+    loadStorePrices(store).then((next) => {
       if (!cancelled) setPrices(next);
     });
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, store]);
 
   async function run(id: string, action: () => Promise<void>) {
     setBusyId(id);
@@ -65,7 +67,8 @@ export function Paywall({
     }
   }
 
-  const offerings = [DAY_PASS, MONTHLY_PRODUCT].map((product) => ({
+  const catalog = catalogFor(store);
+  const offerings = [catalog.day, catalog.monthly].map((product) => ({
     id: product.id,
     label: `${product.title} · ${prices[product.id] ?? product.fallbackPrice}`,
     detail: product.detail,
@@ -126,10 +129,10 @@ export function Paywall({
           </p>
         ) : null}
         <p className="text-xs leading-5 text-[#cbbfa8]">
-          Apple charges your Apple ID. Unlimited today is used once and lasts until midnight UTC.
-          The monthly subscription renews each month until you cancel it in Settings, at least a
-          day before the period ends. A fair-use cap of {unlimitedCap} messages applies each UTC
-          day.{" "}
+          {store === "google"
+            ? "Google Play charges your Google account. Unlimited today is used once and lasts until midnight UTC. The monthly subscription renews each month until you cancel it in Google Play, at least a day before the period ends."
+            : "Apple charges your Apple ID. Unlimited today is used once and lasts until midnight UTC. The monthly subscription renews each month until you cancel it in Settings, at least a day before the period ends."}{" "}
+          A fair-use cap of {unlimitedCap} messages applies each UTC day.{" "}
           <Link href="/privacy" className="text-[#f0d48a] underline underline-offset-4">
             Privacy Policy
           </Link>

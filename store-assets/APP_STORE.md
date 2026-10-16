@@ -1,6 +1,6 @@
 # Ask Jesus AI — App Store
 
-The iOS app is a Capacitor shell. It loads the live site (by default `https://ask-jesus-lake.vercel.app`) and sells messages only through Apple In-App Purchase. The website keeps the free daily limit and the optional `NEXT_PUBLIC_SUPPORT_URL` link. That link is not shown in the iOS app.
+The iOS app is a Capacitor shell. It loads the live site (by default `https://ask-jesus-lake.vercel.app`) and sells messages only through Apple In-App Purchase. The website keeps the free daily limit and the optional `NEXT_PUBLIC_SUPPORT_URL` link. That link is not shown in the iOS app. The website has no checkout and does not use Stripe. Android uses the same prices with shorter product IDs, listed in `store-assets/PLAY_STORE.md`.
 
 Do not run the TestFlight workflow until the steps at the bottom are done.
 

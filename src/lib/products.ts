@@ -1,5 +1,10 @@
-/** App Store bundle id for the Capacitor shell. */
+/** App id for the iOS and Android shells. */
 export const IOS_BUNDLE_ID = "com.starseedsquad.askjesus";
+
+/** Same id as the iOS bundle. Google Play calls it the package name. */
+export const APP_PACKAGE_ID = IOS_BUNDLE_ID;
+
+export type StoreName = "apple" | "google";
 
 /**
  * Consumable day pass. It unlocks unlimited messages until the end of the
@@ -23,14 +28,38 @@ export const MONTHLY_PRODUCT = {
 
 export const SUBSCRIPTION_GROUP = "Ask Jesus Unlimited";
 
+/**
+ * Google Play product IDs must be 1–40 characters. The Apple IDs are longer,
+ * so Play uses these shorter IDs for the same two products.
+ */
+export const GOOGLE_DAY_PASS = {
+  id: "unlimited.today",
+  fallbackPrice: "$0.99",
+  title: "Unlimited today",
+  detail: "Unlimited messages until midnight UTC",
+} as const;
+
+export const GOOGLE_MONTHLY_PRODUCT = {
+  id: "unlimited.monthly",
+  basePlanId: "monthly",
+  fallbackPrice: "$6.99/month",
+  title: "Monthly",
+  detail: "Unlimited messages, renewing every month",
+} as const;
+
 export const PRODUCT_IDS = [DAY_PASS.id, MONTHLY_PRODUCT.id] as const;
 
+export function catalogFor(store: StoreName) {
+  if (store === "google") return { day: GOOGLE_DAY_PASS, monthly: GOOGLE_MONTHLY_PRODUCT };
+  return { day: DAY_PASS, monthly: MONTHLY_PRODUCT };
+}
+
 export function isDayPass(productId: string) {
-  return productId === DAY_PASS.id;
+  return productId === DAY_PASS.id || productId === GOOGLE_DAY_PASS.id;
 }
 
 export function isMonthlyProduct(productId: string) {
-  return productId === MONTHLY_PRODUCT.id;
+  return productId === MONTHLY_PRODUCT.id || productId === GOOGLE_MONTHLY_PRODUCT.id;
 }
 
 export function isKnownProduct(productId: string) {

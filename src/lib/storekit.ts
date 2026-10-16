@@ -1,18 +1,31 @@
 "use client";
 
-import { DAY_PASS, MONTHLY_PRODUCT, PRODUCT_IDS, isMonthlyProduct } from "@/lib/products";
+import type { Product } from "@capgo/native-purchases";
+import {
+  GOOGLE_MONTHLY_PRODUCT,
+  catalogFor,
+  isDayPass,
+  isKnownProduct,
+  isMonthlyProduct,
+  type StoreName,
+} from "@/lib/products";
 
 export type UnlockKind = "day" | "subscription";
+
+type GooglePurchase = { productId: string; purchaseToken: string };
 
 async function nativePurchases() {
   const { NativePurchases, PURCHASE_TYPE } = await import("@capgo/native-purchases");
   return { NativePurchases, PURCHASE_TYPE };
 }
 
-export async function isIosNative() {
-  if (typeof window === "undefined") return false;
+export async function nativeStore(): Promise<StoreName | null> {
+  if (typeof window === "undefined") return null;
   const { Capacitor } = await import("@capacitor/core");
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  if (!Capacitor.isNativePlatform()) return null;
+  if (Capacitor.getPlatform() === "ios") return "apple";
+  if (Capacitor.getPlatform() === "android") return "google";
+  return null;
 }
 
 function signedFrom(purchases: { jwsRepresentation?: string }[]) {
@@ -21,11 +34,34 @@ function signedFrom(purchases: { jwsRepresentation?: string }[]) {
     .filter((signed): signed is string => Boolean(signed));
 }
 
-export async function postSignedTransactions(signedTransactions: string[], replace = false) {
+function googleFrom(
+  purchases: { productIdentifier?: string; purchaseToken?: string; purchaseState?: string }[],
+) {
+  const seen = new Set<string>();
+  const next: GooglePurchase[] = [];
+  for (const purchase of purchases) {
+    if (!purchase.productIdentifier || !purchase.purchaseToken) continue;
+    if (purchase.purchaseState != null && purchase.purchaseState !== "1") continue;
+    const productId =
+      purchase.productIdentifier === GOOGLE_MONTHLY_PRODUCT.basePlanId
+        ? GOOGLE_MONTHLY_PRODUCT.id
+        : purchase.productIdentifier;
+    if (!isKnownProduct(productId) || seen.has(purchase.purchaseToken)) continue;
+    seen.add(purchase.purchaseToken);
+    next.push({ productId, purchaseToken: purchase.purchaseToken });
+  }
+  return next;
+}
+
+async function postVerify(body: {
+  signedTransactions?: string[];
+  googlePurchases?: GooglePurchase[];
+  replace: boolean;
+}) {
   const response = await fetch("/api/iap/verify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ signedTransactions, replace }),
+    body: JSON.stringify(body),
   });
   const data = (await response.json().catch(() => null)) as { message?: string; unlocked?: boolean } | null;
   if (!response.ok) {
@@ -34,54 +70,94 @@ export async function postSignedTransactions(signedTransactions: string[], repla
   return data;
 }
 
-export async function loadStorePrices() {
+function priceKey(product: Product) {
+  return product.planIdentifier || product.identifier;
+}
+
+export async function loadStorePrices(store: StoreName = "apple") {
   const prices: Record<string, string> = {};
+  const catalog = catalogFor(store);
   try {
     const { NativePurchases, PURCHASE_TYPE } = await nativePurchases();
     const dayPass = await NativePurchases.getProducts({
-      productIdentifiers: [DAY_PASS.id],
+      productIdentifiers: [catalog.day.id],
       productType: PURCHASE_TYPE.INAPP,
     });
     const monthly = await NativePurchases.getProducts({
-      productIdentifiers: [MONTHLY_PRODUCT.id],
+      productIdentifiers: [catalog.monthly.id],
       productType: PURCHASE_TYPE.SUBS,
     });
     for (const product of [...dayPass.products, ...monthly.products]) {
-      if (product.identifier && product.priceString) prices[product.identifier] = product.priceString;
+      const key = priceKey(product);
+      if (key && product.priceString) prices[key] = product.priceString;
     }
   } catch {
-    // StoreKit prices are optional. The buttons keep the suggested prices.
+    // Store prices are optional. The buttons keep the suggested prices.
   }
   return prices;
 }
 
-async function finishTransaction(transactionId: string) {
+async function settle(store: StoreName, productId: string, token: string) {
   const { NativePurchases } = await nativePurchases();
-  await NativePurchases.acknowledgePurchase({ purchaseToken: transactionId });
+  if (store === "google" && isDayPass(productId)) {
+    await NativePurchases.consumePurchase({ purchaseToken: token });
+    return;
+  }
+  await NativePurchases.acknowledgePurchase({ purchaseToken: token });
 }
 
 export async function purchaseProduct(productId: string) {
-  if (!PRODUCT_IDS.includes(productId as (typeof PRODUCT_IDS)[number])) {
-    throw new Error("That purchase is not available.");
-  }
+  if (!isKnownProduct(productId)) throw new Error("That purchase is not available.");
+  const store = (await nativeStore()) ?? "apple";
   const { NativePurchases, PURCHASE_TYPE } = await nativePurchases();
   const billing = await NativePurchases.isBillingSupported();
   if (!billing.isBillingSupported) throw new Error("Purchases are not available on this device.");
   await NativePurchases.configure({ autoFinishTransactions: false });
+
+  let planIdentifier: string | undefined;
+  let offerToken: string | undefined;
+  if (store === "google" && isMonthlyProduct(productId)) {
+    const { products } = await NativePurchases.getProducts({
+      productIdentifiers: [productId],
+      productType: PURCHASE_TYPE.SUBS,
+    });
+    const offer =
+      products.find((product) => product.identifier === GOOGLE_MONTHLY_PRODUCT.basePlanId) ??
+      products[0];
+    planIdentifier = offer?.identifier || GOOGLE_MONTHLY_PRODUCT.basePlanId;
+    offerToken = offer?.offerToken;
+  }
+
   const transaction = await NativePurchases.purchaseProduct({
     productIdentifier: productId,
     productType: isMonthlyProduct(productId) ? PURCHASE_TYPE.SUBS : PURCHASE_TYPE.INAPP,
+    planIdentifier,
+    offerToken,
     quantity: 1,
+    isConsumable: false,
     autoAcknowledgePurchases: false,
   });
-  if (!transaction.jwsRepresentation) {
-    throw new Error("Apple did not return a signed transaction.");
+
+  if (store === "google") {
+    if (transaction.purchaseState != null && transaction.purchaseState !== "1") {
+      throw new Error("That purchase is still pending.");
+    }
+    if (!transaction.purchaseToken) throw new Error("Google Play did not return a purchase token.");
+    await postVerify({
+      googlePurchases: [{ productId, purchaseToken: transaction.purchaseToken }],
+      replace: false,
+    });
+    await settle("google", productId, transaction.purchaseToken);
+    return;
   }
-  await postSignedTransactions([transaction.jwsRepresentation], false);
-  if (transaction.transactionId) await finishTransaction(transaction.transactionId);
+
+  if (!transaction.jwsRepresentation) throw new Error("Apple did not return a signed transaction.");
+  await postVerify({ signedTransactions: [transaction.jwsRepresentation], replace: false });
+  if (transaction.transactionId) await settle("apple", productId, transaction.transactionId);
 }
 
 export async function restorePurchases() {
+  const store = (await nativeStore()) ?? "apple";
   const { NativePurchases, PURCHASE_TYPE } = await nativePurchases();
   await NativePurchases.configure({ autoFinishTransactions: false });
   await NativePurchases.restorePurchases();
@@ -93,17 +169,33 @@ export async function restorePurchases() {
     productType: PURCHASE_TYPE.INAPP,
     onlyCurrentEntitlements: true,
   });
-  const signed = signedFrom([...subscriptions.purchases, ...inApp.purchases]);
+  const purchases = [...subscriptions.purchases, ...inApp.purchases];
+  if (store === "google") {
+    const googlePurchases = googleFrom(purchases);
+    if (googlePurchases.length === 0) {
+      const data = await postVerify({ googlePurchases: [], replace: true });
+      if (data?.unlocked) return;
+      throw new Error("Nothing active to restore. Unlimited today lasts until the day ends.");
+    }
+    await postVerify({ googlePurchases, replace: true });
+    for (const purchase of googlePurchases) {
+      await settle("google", purchase.productId, purchase.purchaseToken);
+    }
+    return;
+  }
+  const signed = signedFrom(purchases);
   if (signed.length === 0) {
-    const data = await postSignedTransactions([], true);
+    const data = await postVerify({ signedTransactions: [], replace: true });
     if (data?.unlocked) return;
     throw new Error("Nothing active to restore. Unlimited today lasts until the day ends.");
   }
-  await postSignedTransactions(signed, true);
+  await postVerify({ signedTransactions: signed, replace: true });
 }
 
-/** Refresh a subscription the device already has. A finished tip stays on its cookie. */
-export async function refreshIosEntitlement(unlockKind: UnlockKind | null) {
+/** Refresh a subscription the device already has. A finished day pass stays on its cookie. */
+export async function refreshNativeEntitlement(unlockKind: UnlockKind | null) {
+  const store = await nativeStore();
+  if (!store) return;
   const { NativePurchases, PURCHASE_TYPE } = await nativePurchases();
   await NativePurchases.configure({ autoFinishTransactions: false });
   const subscriptions = await NativePurchases.getPurchases({
@@ -114,22 +206,38 @@ export async function refreshIosEntitlement(unlockKind: UnlockKind | null) {
     productType: PURCHASE_TYPE.INAPP,
     onlyCurrentEntitlements: true,
   });
-  const signed = signedFrom([...subscriptions.purchases, ...inApp.purchases]);
-  if (signed.length > 0) {
-    await postSignedTransactions(signed, false);
+  const purchases = [...subscriptions.purchases, ...inApp.purchases];
+  if (store === "google") {
+    const unfinished = await NativePurchases.getUnfinishedTransactions();
+    const googlePurchases = googleFrom([...purchases, ...unfinished.transactions]);
+    if (googlePurchases.length > 0) {
+      await postVerify({ googlePurchases, replace: false });
+      for (const purchase of googlePurchases) {
+        await settle("google", purchase.productId, purchase.purchaseToken);
+      }
+      return;
+    }
+    if (unlockKind === "subscription") await postVerify({ googlePurchases: [], replace: true });
     return;
   }
-  if (unlockKind === "subscription") await postSignedTransactions([], true);
+  const signed = signedFrom(purchases);
+  if (signed.length > 0) {
+    await postVerify({ signedTransactions: signed, replace: false });
+    return;
+  }
+  if (unlockKind === "subscription") await postVerify({ signedTransactions: [], replace: true });
 }
 
 export async function listenForUnfinishedTransactions(onGranted: () => void) {
+  const store = await nativeStore();
+  if (store !== "apple") return { remove() {} };
   const { NativePurchases } = await nativePurchases();
   await NativePurchases.configure({ autoFinishTransactions: false });
   return NativePurchases.addListener("transactionUpdated", async (transaction) => {
     if (!transaction.jwsRepresentation) return;
     try {
-      await postSignedTransactions([transaction.jwsRepresentation], false);
-      if (transaction.transactionId) await finishTransaction(transaction.transactionId);
+      await postVerify({ signedTransactions: [transaction.jwsRepresentation], replace: false });
+      if (transaction.transactionId) await settle("apple", transaction.productIdentifier, transaction.transactionId);
       onGranted();
     } catch {
       // Leave the transaction unfinished so a later launch can try again.

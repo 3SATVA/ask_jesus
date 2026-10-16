@@ -24,6 +24,9 @@ const config: CapacitorConfig = {
     contentInset: "never",
     backgroundColor: "#000000",
   },
+  android: {
+    backgroundColor: "#000000",
+  },
   plugins: {
     NativePurchases: {
       autoFinishTransactions: false,

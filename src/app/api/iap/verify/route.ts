@@ -1,5 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { confirmSignedTransactions, readAppleIapConfig } from "@/lib/apple-iap";
+import { confirmGooglePurchases, readGooglePlayConfig } from "@/lib/google-play";
+import type { GrantedEntitlement } from "@/lib/entitlement";
+import { isKnownProduct } from "@/lib/products";
 import {
   UNLOCK_COOKIE,
   readUnlock,
@@ -15,19 +18,64 @@ export const maxDuration = 30;
 const NOT_CONFIRMED = "That purchase could not be confirmed. You can try again.";
 const NOT_READY = "Purchases are not available just yet.";
 
-export async function POST(request: NextRequest) {
-  const config = readAppleIapConfig();
-  const secret = unlockSecret();
-  if (!config || !secret) {
+function notReady() {
+  return NextResponse.json(
+    { error: "not_configured", message: NOT_READY },
+    { status: 503, headers: { "Cache-Control": "no-store" } },
+  );
+}
+
+function grantResponse(entitlement: GrantedEntitlement, secret: string, now: Date) {
+  const payload = {
+    kind: entitlement.kind,
+    until: entitlement.until.toISOString(),
+    transactionId: entitlement.transactionId,
+    productId: entitlement.productId,
+  };
+  return NextResponse.json(
+    {
+      unlocked: true,
+      unlockKind: payload.kind,
+      until: payload.until,
+      productId: payload.productId,
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store",
+        "Set-Cookie": unlockSetCookie(
+          sealUnlock(payload, secret),
+          unlockMaxAgeSeconds(entitlement.until, now),
+        ),
+      },
+    },
+  );
+}
+
+function notConfirmed(request: NextRequest, secret: string, replace: boolean, now: Date) {
+  const existing = readUnlock(request.cookies.get(UNLOCK_COOKIE)?.value, secret, now);
+  if (replace && existing?.kind === "subscription") {
     return NextResponse.json(
-      { error: "not_configured", message: NOT_READY },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
+      { error: "not_confirmed", message: NOT_CONFIRMED, unlocked: false, unlockKind: null },
+      { status: 402, headers: { "Cache-Control": "no-store", "Set-Cookie": unlockClearCookie() } },
     );
   }
+  return NextResponse.json(
+    { error: "not_confirmed", message: NOT_CONFIRMED },
+    { status: 402, headers: { "Cache-Control": "no-store" } },
+  );
+}
 
-  let body: { signedTransactions?: unknown; replace?: unknown };
+export async function POST(request: NextRequest) {
+  const secret = unlockSecret();
+  if (!secret) return notReady();
+
+  let body: { signedTransactions?: unknown; googlePurchases?: unknown; replace?: unknown };
   try {
-    body = (await request.json()) as { signedTransactions?: unknown; replace?: unknown };
+    body = (await request.json()) as {
+      signedTransactions?: unknown;
+      googlePurchases?: unknown;
+      replace?: unknown;
+    };
   } catch {
     body = {};
   }
@@ -35,10 +83,31 @@ export async function POST(request: NextRequest) {
   const signedTransactions = Array.isArray(body.signedTransactions)
     ? body.signedTransactions.filter((item): item is string => typeof item === "string").slice(0, 20)
     : [];
+  const googlePurchases = Array.isArray(body.googlePurchases)
+    ? body.googlePurchases
+        .filter(
+          (item): item is { productId: string; purchaseToken: string } =>
+            Boolean(item) &&
+            typeof item === "object" &&
+            typeof (item as { productId?: unknown }).productId === "string" &&
+            typeof (item as { purchaseToken?: unknown }).purchaseToken === "string" &&
+            isKnownProduct((item as { productId: string }).productId) &&
+            (item as { purchaseToken: string }).purchaseToken.length > 0 &&
+            (item as { purchaseToken: string }).purchaseToken.length <= 4096,
+        )
+        .slice(0, 20)
+    : [];
   const replace = body.replace === true;
   const now = new Date();
 
-  if (signedTransactions.length === 0) {
+  if (signedTransactions.length > 0 && googlePurchases.length > 0) {
+    return NextResponse.json(
+      { error: "invalid", message: NOT_CONFIRMED },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  if (signedTransactions.length === 0 && googlePurchases.length === 0) {
     if (!replace) {
       return NextResponse.json(
         { error: "invalid", message: NOT_CONFIRMED },
@@ -58,42 +127,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const result = await confirmSignedTransactions(signedTransactions, config, now);
-  if (!result.ok) {
-    const existing = readUnlock(request.cookies.get(UNLOCK_COOKIE)?.value, secret, now);
-    if (replace && existing?.kind === "subscription") {
-      return NextResponse.json(
-        { error: "not_confirmed", message: NOT_CONFIRMED, unlocked: false, unlockKind: null },
-        { status: 402, headers: { "Cache-Control": "no-store", "Set-Cookie": unlockClearCookie() } },
-      );
-    }
-    return NextResponse.json(
-      { error: "not_confirmed", message: NOT_CONFIRMED },
-      { status: 402, headers: { "Cache-Control": "no-store" } },
-    );
+  if (googlePurchases.length > 0) {
+    const config = readGooglePlayConfig();
+    if (!config) return notReady();
+    const result = await confirmGooglePurchases(googlePurchases, config, now);
+    if (!result.ok) return notConfirmed(request, secret, replace, now);
+    return grantResponse(result.entitlement, secret, now);
   }
 
-  const payload = {
-    kind: result.entitlement.kind,
-    until: result.entitlement.until.toISOString(),
-    transactionId: result.entitlement.transactionId,
-    productId: result.entitlement.productId,
-  };
-  return NextResponse.json(
-    {
-      unlocked: true,
-      unlockKind: payload.kind,
-      until: payload.until,
-      productId: payload.productId,
-    },
-    {
-      headers: {
-        "Cache-Control": "no-store",
-        "Set-Cookie": unlockSetCookie(
-          sealUnlock(payload, secret),
-          unlockMaxAgeSeconds(result.entitlement.until, now),
-        ),
-      },
-    },
-  );
+  const config = readAppleIapConfig();
+  if (!config) return notReady();
+  const result = await confirmSignedTransactions(signedTransactions, config, now);
+  if (!result.ok) return notConfirmed(request, secret, replace, now);
+  return grantResponse(result.entitlement, secret, now);
 }

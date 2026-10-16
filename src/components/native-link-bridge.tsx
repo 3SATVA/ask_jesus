@@ -2,14 +2,17 @@
 
 import { useEffect } from "react";
 
-/** Open links that leave this site in Safari. The iOS shell has no payment links of its own. */
-export function IosLinkBridge() {
+/** Open links that leave this site in the system browser. The native shells have no payment links of their own. */
+export function NativeLinkBridge() {
   useEffect(() => {
     let remove = () => {};
     let cancelled = false;
     (async () => {
       const { Capacitor } = await import("@capacitor/core");
-      if (cancelled || !Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "ios") return;
+      const platform = Capacitor.getPlatform();
+      if (cancelled || !Capacitor.isNativePlatform() || (platform !== "ios" && platform !== "android")) {
+        return;
+      }
       const onClick = (event: MouseEvent) => {
         const target = event.target;
         if (!(target instanceof Element)) return;

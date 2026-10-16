@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     "/api/ask": ["./JESUS_PROMPT.md"],
     "/api/iap/verify": ["./certs/AppleRootCA-G2.cer", "./certs/AppleRootCA-G3.cer"],
   },
-  serverExternalPackages: ["@apple/app-store-server-library"],
+  serverExternalPackages: ["@apple/app-store-server-library", "google-auth-library"],
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

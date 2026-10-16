@@ -8,11 +8,12 @@ import { Paywall } from "@/components/paywall";
 import { ReplyText } from "@/components/reply-text";
 import { FAIR_USE_MESSAGE, LIMIT_MESSAGE } from "@/lib/messages";
 import {
-  isIosNative,
   listenForUnfinishedTransactions,
-  refreshIosEntitlement,
+  nativeStore,
+  refreshNativeEntitlement,
   type UnlockKind,
 } from "@/lib/storekit";
+import type { StoreName } from "@/lib/products";
 
 type AskError = "invalid" | "limit" | "fair_use" | "missing_key" | "upstream" | "network";
 
@@ -88,7 +89,7 @@ export function AskPanel({
   const [limit, setLimit] = useState(initialLimit);
   const [unlockKind, setUnlockKind] = useState<UnlockKind | null>(null);
   const [fairUseRemaining, setFairUseRemaining] = useState<number | null>(null);
-  const [platform, setPlatform] = useState<"unknown" | "ios" | "web">("unknown");
+  const [platform, setPlatform] = useState<"unknown" | "ios" | "android" | "web">("unknown");
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<"limit" | "support">("support");
   const [supportNote, setSupportNote] = useState(false);
@@ -150,22 +151,22 @@ export function AskPanel({
         process.env.NODE_ENV === "development" &&
         new URLSearchParams(window.location.search).get("preview") === "paywall"
       ) {
-        setPlatform("ios");
+        setPlatform(new URLSearchParams(window.location.search).get("store") === "google" ? "android" : "ios");
         setRemaining(0);
         setUnlockKind(null);
         setPaywallReason("limit");
         setPaywallOpen(true);
         return;
       }
-      const ios = await isIosNative();
+      const storeKind = await nativeStore();
       if (cancelled) return;
-      setPlatform(ios ? "ios" : "web");
-      if (!ios) return;
+      setPlatform(storeKind === "apple" ? "ios" : storeKind === "google" ? "android" : "web");
+      if (!storeKind) return;
       try {
         const quota = await fetch("/api/ask").then((response) => response.json());
         if (cancelled) return;
         applyQuota(quota);
-        await refreshIosEntitlement(
+        await refreshNativeEntitlement(
           quota.unlockKind === "subscription" ? "subscription" : quota.unlockKind === "day" ? "day" : null,
         );
         if (!cancelled) await reloadQuota();
@@ -194,7 +195,8 @@ export function AskPanel({
   }, [messages, status, error]);
 
   const streaming = status === "streaming";
-  const iosApp = platform === "ios";
+  const nativeApp = platform === "ios" || platform === "android";
+  const store: StoreName = platform === "android" ? "google" : "apple";
   const freeLimitReached = remaining === 0 && !unlockKind;
   const fairUseReached = unlockKind != null && fairUseRemaining === 0;
   const atLimit = freeLimitReached || fairUseReached;
@@ -202,11 +204,11 @@ export function AskPanel({
   const hasConversation = messages.some((message) => message.text.trim());
 
   useEffect(() => {
-    if (iosApp && freeLimitReached && !streaming) {
+    if (nativeApp && freeLimitReached && !streaming) {
       setPaywallReason("limit");
       setPaywallOpen(true);
     }
-  }, [iosApp, freeLimitReached, streaming]);
+  }, [nativeApp, freeLimitReached, streaming]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -376,7 +378,7 @@ export function AskPanel({
             {FAIR_USE_MESSAGE}
           </p>
         ) : null}
-        {freeLimitReached && !streaming && !iosApp ? (
+        {freeLimitReached && !streaming && !nativeApp ? (
           <p className="mb-2 px-1 text-sm leading-6 text-[#f7f1e4]" role="status">
             {LIMIT_MESSAGE}
           </p>
@@ -434,7 +436,7 @@ export function AskPanel({
             >
               About
             </Link>
-            {iosApp ? (
+            {nativeApp ? (
               <button
                 type="button"
                 onClick={() => {
@@ -457,10 +459,11 @@ export function AskPanel({
           </div>
         </footer>
       </div>
-      {iosApp ? (
+      {nativeApp ? (
         <Paywall
           open={paywallOpen}
           reason={paywallReason}
+          store={store}
           unlimitedCap={unlimitedCap}
           subscriptionActive={unlockKind === "subscription"}
           onOpenChange={setPaywallOpen}

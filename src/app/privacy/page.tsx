@@ -4,7 +4,8 @@ import { unlimitedDailyCap } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Privacy — ASK JESUS",
-  description: "How Ask Jesus AI handles the words you type, the daily limit, and App Store purchases.",
+  description:
+    "How Ask Jesus AI handles the words you type, the daily limit, and App Store and Google Play purchases.",
 };
 
 export default function PrivacyPage() {
@@ -31,19 +32,24 @@ export default function PrivacyPage() {
         same cookie, up to {cap} messages that day. The cookie is not an account.
       </p>
       <p>
-        On the iOS app, Unlimited today and the monthly subscription are processed by Apple. This
-        app does not receive your card number. After Apple returns a signed transaction, the
-        server checks it with Apple and, if it is valid, sets a cookie named ask_jesus_unlock.
-        That cookie says how long the purchase lasts: until the end of the UTC day for Unlimited
-        today, or until the subscription period ends. Messages during that time still count
-        toward the daily cap above. The website does not sell these.
-        If a giving page is configured, it is only shown on the website.
+        On the iOS app, Unlimited today and the monthly subscription are processed by Apple. On
+        the Android app, the same products are processed by Google Play. This app does not receive
+        your card number. The website does not sell these and does not use Stripe. After Apple
+        returns a signed transaction, or Google Play returns a purchase token, the server checks
+        it with that store and, if it is valid, sets a cookie named ask_jesus_unlock. That cookie
+        says how long the purchase lasts: until the end of the UTC day for Unlimited today, or
+        until the subscription period ends. Messages during that time still count toward the daily
+        cap above. If a giving page is configured, it is only shown on the website, never inside
+        the apps.
       </p>
       <p>
         The app does not use advertising identifiers, and it does not sell personal information.
         It is not directed to children under 13.
       </p>
-      <p>Questions about privacy can be sent through the contact on the App Store listing for Ask Jesus AI.</p>
+        <p>
+          Questions about privacy can be sent through the contact on the App Store or Google Play
+          listing for Ask Jesus AI.
+        </p>
     </LegalPage>
   );
 }

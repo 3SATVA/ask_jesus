@@ -34,8 +34,10 @@ yarn-error.log*
 .env*
 !.env.example
 
-# App Store Connect API keys. Never commit these.
+# App Store Connect API keys and Play upload keystores. Never commit these.
 *.p8
+*.jks
+*.keystore
 private_keys/
 
 # iOS build output. The Xcode project itself is committed.
