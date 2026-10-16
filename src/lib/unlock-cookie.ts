@@ -2,6 +2,11 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const UNLOCK_COOKIE = "ask_jesus_unlock";
 
+/** Sent by the app on each request. The web view does not reliably keep the cookie. */
+export const UNLOCK_HEADER = "x-ask-jesus-unlock";
+
+const MAX_PRESENTED_UNLOCK = 4096;
+
 export type UnlockPayload = {
   kind: "day" | "subscription";
   until: string;
@@ -75,4 +80,22 @@ export function unlockClearCookie() {
 
 export function unlockSecret(env: Record<string, string | undefined> = process.env) {
   return env.UNLOCK_COOKIE_SECRET?.trim() || "";
+}
+
+export function reportMissingUnlockSecret() {
+  console.error(
+    "ASK JESUS unlock: UNLOCK_COOKIE_SECRET is not set. A verified purchase cannot be remembered until this variable is set on the server.",
+  );
+}
+
+/** Prefer the header token. Fall back to the cookie when the browser stored it. */
+export function presentedUnlock(request: {
+  headers: { get(name: string): string | null };
+  cookies: { get(name: string): { value: string } | undefined };
+}) {
+  const header = request.headers.get(UNLOCK_HEADER)?.trim() ?? "";
+  if (header && header.length <= MAX_PRESENTED_UNLOCK) return header;
+  const cookie = request.cookies.get(UNLOCK_COOKIE)?.value?.trim() ?? "";
+  if (cookie && cookie.length <= MAX_PRESENTED_UNLOCK) return cookie;
+  return undefined;
 }

@@ -17,6 +17,7 @@ import {
   purchaseProduct,
   purchaseWasCancelled,
   restorePurchases,
+  type UnlockKind,
 } from "@/lib/storekit";
 
 export function Paywall({
@@ -34,7 +35,7 @@ export function Paywall({
   unlimitedCap: number;
   subscriptionActive: boolean;
   onOpenChange: (open: boolean) => void;
-  onUnlocked: () => void;
+  onUnlocked: (kind: UnlockKind | null) => void;
 }) {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -51,12 +52,12 @@ export function Paywall({
     };
   }, [open, store]);
 
-  async function run(id: string, action: () => Promise<void>) {
+  async function run(id: string, action: () => Promise<{ unlockKind?: UnlockKind | null } | void>) {
     setBusyId(id);
     setNote("");
     try {
-      await action();
-      onUnlocked();
+      const result = await action();
+      onUnlocked(result?.unlockKind ?? null);
       onOpenChange(false);
     } catch (error) {
       if (!purchaseWasCancelled(error)) {

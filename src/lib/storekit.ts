@@ -9,6 +9,8 @@ import {
   isMonthlyProduct,
   type StoreName,
 } from "@/lib/products";
+import { setUnlockSuppressed, unlockSuppressed } from "@/lib/tester-device";
+import { applyUnlockResponse, unlockRequestHeaders } from "@/lib/unlock-token";
 
 export type UnlockKind = "day" | "subscription";
 
@@ -53,21 +55,32 @@ function googleFrom(
   return next;
 }
 
+export type VerifiedUnlock = {
+  unlocked?: boolean;
+  unlockKind?: UnlockKind | null;
+  unlockToken?: string;
+  message?: string;
+};
+
 async function postVerify(body: {
   signedTransactions?: string[];
   googlePurchases?: GooglePurchase[];
   replace: boolean;
-}) {
+}): Promise<VerifiedUnlock> {
   const response = await fetch("/api/iap/verify", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: unlockRequestHeaders({ "Content-Type": "application/json" }),
+    credentials: "include",
     body: JSON.stringify(body),
   });
-  const data = (await response.json().catch(() => null)) as { message?: string; unlocked?: boolean } | null;
+  const data = (await response.json().catch(() => null)) as VerifiedUnlock | null;
   if (!response.ok) {
+    applyUnlockResponse(data);
     throw new Error(data?.message || "That purchase could not be confirmed.");
   }
-  return data;
+  if (data?.unlocked) setUnlockSuppressed(false);
+  applyUnlockResponse(data);
+  return data ?? {};
 }
 
 function priceKey(product: Product) {
@@ -143,17 +156,21 @@ export async function purchaseProduct(productId: string) {
       throw new Error("That purchase is still pending.");
     }
     if (!transaction.purchaseToken) throw new Error("Google Play did not return a purchase token.");
-    await postVerify({
+    const verified = await postVerify({
       googlePurchases: [{ productId, purchaseToken: transaction.purchaseToken }],
       replace: false,
     });
     await settle("google", productId, transaction.purchaseToken);
-    return;
+    return verified;
   }
 
   if (!transaction.jwsRepresentation) throw new Error("Apple did not return a signed transaction.");
-  await postVerify({ signedTransactions: [transaction.jwsRepresentation], replace: false });
+  const verified = await postVerify({
+    signedTransactions: [transaction.jwsRepresentation],
+    replace: false,
+  });
   if (transaction.transactionId) await settle("apple", productId, transaction.transactionId);
+  return verified;
 }
 
 export async function restorePurchases() {
@@ -169,31 +186,36 @@ export async function restorePurchases() {
     productType: PURCHASE_TYPE.INAPP,
     onlyCurrentEntitlements: true,
   });
-  const purchases = [...subscriptions.purchases, ...inApp.purchases];
+  const unfinished = await NativePurchases.getUnfinishedTransactions();
+  const purchases = [...subscriptions.purchases, ...inApp.purchases, ...unfinished.transactions];
   if (store === "google") {
     const googlePurchases = googleFrom(purchases);
     if (googlePurchases.length === 0) {
       const data = await postVerify({ googlePurchases: [], replace: true });
-      if (data?.unlocked) return;
+      if (data?.unlocked) return data;
       throw new Error("Nothing active to restore. Unlimited today lasts until the day ends.");
     }
-    await postVerify({ googlePurchases, replace: true });
+    const verified = await postVerify({ googlePurchases, replace: true });
     for (const purchase of googlePurchases) {
       await settle("google", purchase.productId, purchase.purchaseToken);
     }
-    return;
+    return verified;
   }
   const signed = signedFrom(purchases);
   if (signed.length === 0) {
     const data = await postVerify({ signedTransactions: [], replace: true });
-    if (data?.unlocked) return;
+    if (data?.unlocked) return data;
     throw new Error("Nothing active to restore. Unlimited today lasts until the day ends.");
   }
-  await postVerify({ signedTransactions: signed, replace: true });
+  return postVerify({ signedTransactions: signed, replace: true });
 }
 
-/** Refresh a subscription the device already has. A finished day pass stays on its cookie. */
+/**
+ * On launch, ask the store for the active subscription and any unfinished
+ * day pass. A finished day pass stays in the stored unlock token.
+ */
 export async function refreshNativeEntitlement(unlockKind: UnlockKind | null) {
+  if (unlockSuppressed()) return;
   const store = await nativeStore();
   if (!store) return;
   const { NativePurchases, PURCHASE_TYPE } = await nativePurchases();
@@ -206,10 +228,10 @@ export async function refreshNativeEntitlement(unlockKind: UnlockKind | null) {
     productType: PURCHASE_TYPE.INAPP,
     onlyCurrentEntitlements: true,
   });
-  const purchases = [...subscriptions.purchases, ...inApp.purchases];
+  const unfinished = await NativePurchases.getUnfinishedTransactions();
+  const purchases = [...subscriptions.purchases, ...inApp.purchases, ...unfinished.transactions];
   if (store === "google") {
-    const unfinished = await NativePurchases.getUnfinishedTransactions();
-    const googlePurchases = googleFrom([...purchases, ...unfinished.transactions]);
+    const googlePurchases = googleFrom(purchases);
     if (googlePurchases.length > 0) {
       await postVerify({ googlePurchases, replace: false });
       for (const purchase of googlePurchases) {
@@ -234,6 +256,7 @@ export async function listenForUnfinishedTransactions(onGranted: () => void) {
   const { NativePurchases } = await nativePurchases();
   await NativePurchases.configure({ autoFinishTransactions: false });
   return NativePurchases.addListener("transactionUpdated", async (transaction) => {
+    if (unlockSuppressed()) return;
     if (!transaction.jwsRepresentation) return;
     try {
       await postVerify({ signedTransactions: [transaction.jwsRepresentation], replace: false });

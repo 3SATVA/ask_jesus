@@ -7,12 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Paywall } from "@/components/paywall";
 import { ReplyText } from "@/components/reply-text";
 import { FAIR_USE_MESSAGE, LIMIT_MESSAGE } from "@/lib/messages";
+import { remainingLabel, shownUnlockKind, unlockConfirmation } from "@/lib/quota-label";
 import {
   listenForUnfinishedTransactions,
   nativeStore,
   refreshNativeEntitlement,
   type UnlockKind,
 } from "@/lib/storekit";
+import { TESTER_RESET_EVENT, askUnlockHeaders, unlockSuppressed } from "@/lib/tester-device";
 import type { StoreName } from "@/lib/products";
 
 type AskError = "invalid" | "limit" | "fair_use" | "missing_key" | "upstream" | "network";
@@ -55,20 +57,6 @@ function loadMessages() {
   }
 }
 
-function remainingLabel(
-  remaining: number | null,
-  limit: number,
-  unlockKind: UnlockKind | null,
-  fairUseReached: boolean,
-) {
-  if (fairUseReached) return "Rest until tomorrow";
-  if (unlockKind === "subscription") return "Unlimited this month";
-  if (unlockKind === "day") return "Unlimited for the rest of today";
-  if (remaining == null) return "A few quiet questions, each day.";
-  if (remaining === 1) return "1 question left today";
-  return `${remaining} of ${limit} questions left today`;
-}
-
 export function AskPanel({
   supportUrl,
   initialLimit,
@@ -93,7 +81,9 @@ export function AskPanel({
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<"limit" | "support">("support");
   const [supportNote, setSupportNote] = useState(false);
+  const [notice, setNotice] = useState("");
   const logRef = useRef<HTMLDivElement>(null);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function applyQuota(data: {
     remaining?: number;
@@ -112,13 +102,34 @@ export function AskPanel({
   }
 
   function reloadQuota() {
-    return fetch("/api/ask")
+    return fetch("/api/ask", { headers: askUnlockHeaders(), credentials: "include" })
       .then((response) => response.json())
       .then((data: { remaining?: number; limit?: number; unlocked?: boolean; unlockKind?: UnlockKind | null; fairUseRemaining?: number | null }) => {
         applyQuota(data);
         return data.unlockKind ?? null;
       });
   }
+
+  useEffect(() => {
+    return () => {
+      if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    function onTesterReset(event: Event) {
+      const detail = (event as CustomEvent<{ unlockCleared?: boolean }>).detail;
+      if (detail?.unlockCleared) {
+        setUnlockKind(null);
+        setFairUseRemaining(null);
+      }
+      void reloadQuota();
+    }
+    window.addEventListener(TESTER_RESET_EVENT, onTesterReset);
+    return () => window.removeEventListener(TESTER_RESET_EVENT, onTesterReset);
+    // reloadQuota reads the latest unlock header when the tester sheet finishes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const stored = loadMessages();
@@ -163,9 +174,13 @@ export function AskPanel({
       setPlatform(storeKind === "apple" ? "ios" : storeKind === "google" ? "android" : "web");
       if (!storeKind) return;
       try {
-        const quota = await fetch("/api/ask").then((response) => response.json());
+        const quota = await fetch("/api/ask", {
+          headers: askUnlockHeaders(),
+          credentials: "include",
+        }).then((response) => response.json());
         if (cancelled) return;
         applyQuota(quota);
+        if (unlockSuppressed()) return;
         await refreshNativeEntitlement(
           quota.unlockKind === "subscription" ? "subscription" : quota.unlockKind === "day" ? "day" : null,
         );
@@ -250,7 +265,8 @@ export function AskPanel({
     try {
       const response = await fetch("/api/ask", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: askUnlockHeaders({ "Content-Type": "application/json" }),
+        credentials: "include",
         body: JSON.stringify({
           messages: [...history, { role: "user", content: nextQuestion }],
         }),
@@ -368,6 +384,11 @@ export function AskPanel({
       </div>
 
       <div className="composer pointer-events-auto flex shrink-0 flex-col pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+        {notice ? (
+          <p className="mb-2 px-1 text-center text-sm leading-6 text-[#f0d48a]" role="status">
+            {notice}
+          </p>
+        ) : null}
         {error ? (
           <p className="mb-2 px-1 text-sm leading-6 text-[#f6efe2]" role="alert">
             {error}
@@ -467,7 +488,12 @@ export function AskPanel({
           unlimitedCap={unlimitedCap}
           subscriptionActive={unlockKind === "subscription"}
           onOpenChange={setPaywallOpen}
-          onUnlocked={() => {
+          onUnlocked={(kind) => {
+            const shown = shownUnlockKind([unlockKind, kind]);
+            if (shown) setUnlockKind(shown);
+            setNotice(unlockConfirmation(shown));
+            if (noticeTimer.current) clearTimeout(noticeTimer.current);
+            noticeTimer.current = setTimeout(() => setNotice(""), 4500);
             void reloadQuota();
           }}
         />
