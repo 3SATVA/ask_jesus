@@ -4,6 +4,16 @@ name: iOS TestFlight
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/ios-testflight.yml
+      - ios/**
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: true
 
 jobs:
   testflight:
@@ -17,10 +27,10 @@ jobs:
       CAPACITOR_SERVER_URL: ${{ secrets.CAPACITOR_SERVER_URL }}
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -92,7 +102,8 @@ jobs:
           </plist>
           EOF
           # Auth flags belong before the action. The shared scheme is App.
-          # Automatic signing picks the distribution identity at export time.
+          # Apple Distribution creates an App Store profile. A development profile
+          # cannot be created for this team because it has no registered devices.
           XCODE_SIGN=(
             -authenticationKeyPath "$KEY_PATH"
             -authenticationKeyID "$ASC_KEY_ID"
@@ -100,6 +111,7 @@ jobs:
             -allowProvisioningUpdates
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
             CODE_SIGN_STYLE=Automatic
+            "CODE_SIGN_IDENTITY=Apple Distribution"
             IPHONEOS_DEPLOYMENT_TARGET=15.0
           )
           if [ -d ios/App/App.xcworkspace ]; then
