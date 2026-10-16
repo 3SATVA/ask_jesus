@@ -53,6 +53,10 @@ describe("decideAsk", () => {
       { type: "limit" },
     );
     assert.deepEqual(
+      decideAsk({ ...base, question: "How do I forgive?", used: 10, unlocked: true }),
+      { type: "answer" },
+    );
+    assert.deepEqual(
       decideAsk({ ...base, question: "How do I forgive?", hasKey: false }),
       { type: "missing_key" },
     );

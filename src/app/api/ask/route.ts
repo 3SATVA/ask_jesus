@@ -18,22 +18,29 @@ import {
 } from "@/lib/config";
 import { instructionsForTurn } from "@/lib/prompt";
 import { QUOTA_COOKIE, parseQuota, quotaSetCookie } from "@/lib/quota";
+import { UNLOCK_COOKIE, readUnlock, unlockSecret } from "@/lib/unlock-cookie";
 
 export const maxDuration = 60;
 
-function quotaPayload(used: number) {
+function quotaPayload(used: number, unlockKind: "day" | "subscription" | null) {
   const limit = dailyLimit();
   return {
     used,
     limit,
     remaining: Math.max(0, limit - used),
+    unlocked: Boolean(unlockKind),
+    unlockKind,
     supportUrl: supportUrl(),
   };
 }
 
+function unlockKindFor(request: NextRequest) {
+  return readUnlock(request.cookies.get(UNLOCK_COOKIE)?.value, unlockSecret())?.kind ?? null;
+}
+
 export async function GET(request: NextRequest) {
   const used = parseQuota(request.cookies.get(QUOTA_COOKIE)?.value);
-  return NextResponse.json(quotaPayload(used), {
+  return NextResponse.json(quotaPayload(used, unlockKindFor(request)), {
     headers: { "Cache-Control": "no-store" },
   });
 }
@@ -43,9 +50,10 @@ function jsonError(
   error: "invalid" | "limit" | "missing_key" | "upstream",
   message: string,
   used: number,
+  unlockKind: "day" | "subscription" | null,
 ) {
   return NextResponse.json(
-    { error, message, ...quotaPayload(used) },
+    { error, message, ...quotaPayload(used, unlockKind) },
     { status, headers: { "Cache-Control": "no-store" } },
   );
 }
@@ -80,33 +88,36 @@ export async function POST(request: NextRequest) {
   const question = conversation?.question ?? null;
   const used = parseQuota(request.cookies.get(QUOTA_COOKIE)?.value);
   const limit = dailyLimit();
+  const unlockKind = unlockKindFor(request);
   const decision = decideAsk({
     question,
     used,
     limit,
     hasKey: hasOpenAIKey(),
+    unlocked: Boolean(unlockKind),
   });
 
   if (decision.type === "invalid") {
-    return jsonError(400, "invalid", INVALID_MESSAGE, used);
+    return jsonError(400, "invalid", INVALID_MESSAGE, used, unlockKind);
   }
 
   if (decision.type === "crisis") {
     return textStream(crisisMessage(decision.kind), {
       "X-Questions-Remaining": String(Math.max(0, limit - used)),
+      "X-Questions-Unlocked": unlockKind ? "1" : "0",
     });
   }
 
   if (decision.type === "limit") {
-    return jsonError(429, "limit", LIMIT_MESSAGE, used);
+    return jsonError(429, "limit", LIMIT_MESSAGE, used, unlockKind);
   }
 
   if (decision.type === "missing_key") {
-    return jsonError(503, "missing_key", MISSING_KEY_MESSAGE, used);
+    return jsonError(503, "missing_key", MISSING_KEY_MESSAGE, used, unlockKind);
   }
 
   if (!conversation) {
-    return jsonError(400, "invalid", INVALID_MESSAGE, used);
+    return jsonError(400, "invalid", INVALID_MESSAGE, used, unlockKind);
   }
 
   const nextUsed = used + 1;
@@ -116,7 +127,9 @@ export async function POST(request: NextRequest) {
   ];
   const result = streamText({
     model: openai(openaiModel()),
-    instructions: instructionsForTurn(Math.max(0, limit - used)),
+    instructions: instructionsForTurn(Math.max(0, limit - used), {
+      unlimited: Boolean(unlockKind),
+    }),
     messages,
     maxOutputTokens: 420,
     providerOptions: {
@@ -170,6 +183,7 @@ export async function POST(request: NextRequest) {
       "Cache-Control": "no-store",
       "Set-Cookie": quotaSetCookie(nextUsed),
       "X-Questions-Remaining": String(Math.max(0, limit - nextUsed)),
+      "X-Questions-Unlocked": unlockKind ? "1" : "0",
     },
   });
 }

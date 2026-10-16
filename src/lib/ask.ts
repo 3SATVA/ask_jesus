@@ -33,11 +33,12 @@ export function decideAsk(input: {
   used: number;
   limit: number;
   hasKey: boolean;
+  unlocked?: boolean;
 }): AskDecision {
   if (!input.question) return { type: "invalid" };
   const kind = detectCrisis(input.question);
   if (kind) return { type: "crisis", kind };
-  if (input.used >= input.limit) return { type: "limit" };
+  if (input.used >= input.limit && !input.unlocked) return { type: "limit" };
   if (!input.hasKey) return { type: "missing_key" };
   return { type: "answer" };
 }

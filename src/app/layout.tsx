@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cinzel, Cormorant_Garamond, Outfit } from "next/font/google";
+import { IosLinkBridge } from "@/components/ios-link-bridge";
 import { SHARE_IMAGE_PATH, siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -93,7 +94,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           imageSizes="100vw"
         />
       </head>
-      <body className="bg-black text-[#f6efe2]">{children}</body>
+      <body className="bg-black text-[#f6efe2]">
+        <IosLinkBridge />
+        {children}
+      </body>
     </html>
   );
 }

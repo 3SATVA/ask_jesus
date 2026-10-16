@@ -34,6 +34,18 @@ yarn-error.log*
 .env*
 !.env.example
 
+# App Store Connect API keys. Never commit these.
+*.p8
+private_keys/
+
+# iOS build output. The Xcode project itself is committed.
+ios/App/build
+ios/DerivedData
+ios/App/Pods
+ios/App/App/public
+xcuserdata/
+*.xcuserstate
+
 # vercel
 .vercel
 

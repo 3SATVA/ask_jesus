@@ -75,6 +75,11 @@ describe("JESUS_PROMPT.md", () => {
     assert.match(told, /^You are AI Jesus/);
     assert.match(told, /The person has 2 messages left today, including this one\.$/);
     assert.doesNotMatch(told, /Editing this file/);
+
+    const unlimited = instructionsForTurn(0, { unlimited: true });
+    assert.match(unlimited, /unlimited messages right now/);
+    assert.match(unlimited, /not their last message/);
+    assert.doesNotMatch(unlimited, /This is their last message today/);
   });
 
   it("quotes the Hebrew scriptures, and not the later New Testament books", () => {
