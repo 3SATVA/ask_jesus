@@ -21,7 +21,12 @@ import {
 } from "@/lib/config";
 import { instructionsForTurn } from "@/lib/prompt";
 import { QUOTA_COOKIE, parseQuota, quotaSetCookie } from "@/lib/quota";
-import { UNLOCK_COOKIE, readUnlock, unlockSecret } from "@/lib/unlock-cookie";
+import {
+  presentedUnlock,
+  readUnlock,
+  reportMissingUnlockSecret,
+  unlockSecret,
+} from "@/lib/unlock-cookie";
 
 export const maxDuration = 60;
 
@@ -40,7 +45,13 @@ function quotaPayload(used: number, unlockKind: "day" | "subscription" | null) {
 }
 
 function unlockKindFor(request: NextRequest) {
-  return readUnlock(request.cookies.get(UNLOCK_COOKIE)?.value, unlockSecret())?.kind ?? null;
+  const secret = unlockSecret();
+  const presented = presentedUnlock(request);
+  if (presented && !secret) {
+    reportMissingUnlockSecret();
+    return null;
+  }
+  return readUnlock(presented, secret)?.kind ?? null;
 }
 
 export async function GET(request: NextRequest) {

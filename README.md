@@ -38,13 +38,13 @@ Without that key, the page still loads. Asking a question returns a clear messag
 | `MAX_OUTPUT_TOKENS` | No | Hard cap on tokens generated for one reply. Defaults to `420`. Values outside 64–2000 are ignored. |
 | `NEXT_PUBLIC_SUPPORT_URL` | No | Destination for the “Support this ministry” link on the website. Leave it unset and the link explains that a giving page can be connected. The iOS and Android apps do not open this link. The website has no checkout and does not use Stripe. |
 | `NEXT_PUBLIC_SITE_URL` | No | Absolute site URL for link previews. On Vercel, `VERCEL_PROJECT_PRODUCTION_URL` is used when this is unset. Otherwise the URL is `https://ask-jesus-lake.vercel.app`. |
-| `APPLE_IAP_KEY_ID` | For iOS purchases | Key ID of the In-App Purchase key from App Store Connect. This can be a different key from the TestFlight API key. |
-| `APPLE_IAP_ISSUER_ID` | For iOS purchases | Issuer ID for that key. |
-| `APPLE_IAP_PRIVATE_KEY` | For iOS purchases | The `.p8` contents. Newlines may be written as `\n`. |
+| `APPLE_IAP_KEY_ID` | No | Optional App Store Server API key ID. StoreKit receipts are verified locally without it. |
+| `APPLE_IAP_ISSUER_ID` | No | Issuer ID for that optional key. |
+| `APPLE_IAP_PRIVATE_KEY` | No | The `.p8` contents for that optional key. Newlines may be written as `\n`. |
 | `APPLE_BUNDLE_ID` | No | Defaults to `com.starseedsquad.askjesus`. |
 | `APPLE_APP_APPLE_ID` | For production purchases | Numeric Apple ID of the App Store app Ask AI Jesus (`6823414587`). Sandbox and TestFlight receipts can be checked without it. |
-| `APPLE_IAP_ONLINE_CHECKS` | No | Set to `true` to also check Apple’s certificate revocation. Confirmation with the App Store Server API happens either way. |
-| `UNLOCK_COOKIE_SECRET` | For app purchases | Signs the cookie that remembers a verified day pass or subscription. |
+| `APPLE_IAP_ONLINE_CHECKS` | No | Set to `true` to also check Apple’s certificate revocation. |
+| `UNLOCK_COOKIE_SECRET` | For app purchases | Signs the unlock token and cookie that remember a verified day pass or subscription. Purchases cannot be remembered until this is set on the server. |
 | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | For Android purchases | Service account JSON for the Google Play Developer API. Raw JSON or base64. The same JSON can be the GitHub secret used to upload an Android App Bundle. |
 | `GOOGLE_PLAY_PACKAGE_NAME` | No | Defaults to `com.starseedsquad.askjesus`. |
 

@@ -86,21 +86,21 @@ A day is the same UTC day the free limit uses. Unlimited today bought at 11pm UT
 
 ## Server environment
 
-Set these on the host that serves the website (Vercel), not in the iOS binary. The free website keeps working if they are empty. Purchases cannot be confirmed until they are set.
+Set these on the host that serves the website (Vercel), not in the iOS binary. The free website keeps working if they are empty. A purchase is remembered only after `UNLOCK_COOKIE_SECRET` is set. StoreKit receipts are checked locally against Apple Root CA G3, so the In-App Purchase API key is optional.
 
 | Variable | Purpose |
 | --- | --- |
-| `APPLE_IAP_KEY_ID` | Key ID of the In-App Purchase key. This may be a different key from the TestFlight key. |
-| `APPLE_IAP_ISSUER_ID` | Issuer ID for that key. It is often the same issuer as the TestFlight key when both keys are on the same team. Set it here anyway. |
-| `APPLE_IAP_PRIVATE_KEY` | Contents of that key’s `.p8` file, including the BEGIN and END lines. Escaped newlines (`\n`) are accepted. |
+| `APPLE_IAP_KEY_ID` | Optional. Key ID of an In-App Purchase key. When set with the issuer and private key, the server also confirms the transaction with the App Store Server API. |
+| `APPLE_IAP_ISSUER_ID` | Optional. Issuer ID for that key. |
+| `APPLE_IAP_PRIVATE_KEY` | Optional. Contents of that key’s `.p8` file, including the BEGIN and END lines. Escaped newlines (`\n`) are accepted. |
 | `APPLE_BUNDLE_ID` | Optional. Defaults to `com.starseedsquad.askjesus`. |
 | `APPLE_APP_APPLE_ID` | `6823414587`, the numeric Apple ID of Ask AI Jesus. Required to confirm production transactions. TestFlight uses the sandbox, which does not need it. |
-| `APPLE_IAP_ONLINE_CHECKS` | Optional. `true` also checks certificate revocation. The server always confirms the transaction with the App Store Server API. |
-| `UNLOCK_COOKIE_SECRET` | A long random string. It signs the cookie that remembers a verified unlock. |
+| `APPLE_IAP_ONLINE_CHECKS` | Optional. `true` also checks certificate revocation. |
+| `UNLOCK_COOKIE_SECRET` | Required for purchases. A long random string. It signs the unlock token and the cookie that remember a verified unlock. Do not commit it. |
 | `UNLIMITED_DAILY_CAP` | Optional. Fair-use cap for a day pass or subscription, per UTC day. Defaults to `300`. |
 | `MAX_OUTPUT_TOKENS` | Optional. Maximum tokens generated for one reply. Defaults to `420`. |
 
-The server verifies the StoreKit 2 signed transaction (JWS), then calls the App Store Server API for that transaction. A consumable grants access until the end of its purchase day. A subscription grants access until Apple’s expiry, including a billing grace period. A refunded transaction does not grant access.
+The server verifies the StoreKit 2 signed transaction (JWS) against Apple Root CA G3 for both Sandbox and Production. It checks the bundle ID, product ID, and expiry. When the In-App Purchase API key is set, it also asks the App Store Server API. A consumable grants access until the end of its purchase day. A subscription grants access until Apple’s expiry, including a billing grace period. A refunded transaction does not grant access.
 
 ## GitHub secrets
 
@@ -114,7 +114,7 @@ The workflow `.github/workflows/ios-testflight.yml` is manual (`workflow_dispatc
 | `APPLE_TEAM_ID` | Yes | Team ID `9W7P7999LL`. Automatic signing cannot create a profile without it. |
 | `CAPACITOR_SERVER_URL` | No | Site the shell should load. When empty, the app loads `https://ask-jesus-lake.vercel.app`. |
 
-`ASC_PRIVATE_KEY` is for building and uploading. `APPLE_IAP_PRIVATE_KEY` is for verifying purchases on the server. Create both keys. They are not interchangeable in this project, even if you choose to use one App Store Connect key for both jobs.
+`ASC_PRIVATE_KEY` is for building and uploading. `APPLE_IAP_PRIVATE_KEY` is optional and only used when the server should also call the App Store Server API. Receipt checks do not need it.
 
 ## Icon
 
@@ -125,7 +125,7 @@ The App Store icon is `store-assets/ask-jesus-ios-1024.png`, copied into the iOS
 1. Join the Apple Developer Program, if the account is not already enrolled.
 2. Open Agreements, Tax, and Banking and accept the Paid Applications agreement. Add the bank account and tax forms. In-app purchases do not work until this is active.
 3. Users and Access → Integrations → App Store Connect API. Generate an Admin key. Put its key ID, issuer ID, and `.p8` into the GitHub secrets `ASC_KEY_ID`, `ASC_ISSUER_ID`, and `ASC_PRIVATE_KEY`. Put the Team ID into `APPLE_TEAM_ID`.
-4. Users and Access → Integrations → In-App Purchase. Generate a separate key. Put it in the server variables `APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, and `APPLE_IAP_PRIVATE_KEY`. Also set `UNLOCK_COOKIE_SECRET` on the server.
+4. Set `UNLOCK_COOKIE_SECRET` on the server to a long random string. An In-App Purchase API key (`APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_PRIVATE_KEY`) is optional.
 5. Certificates, Identifiers & Profiles → Identifiers. Register an explicit App ID for `com.starseedsquad.askjesus`. In-App Purchase is on by default. Do not add Sign in with Apple.
 6. The App Store app already exists: name Ask AI Jesus, Apple ID `6823414587`, bundle ID `com.starseedsquad.askjesus`, SKU `ask-jesus-ai`. The home screen name is Ask Jesus.
 7. Set the server variable `APPLE_APP_APPLE_ID` to `6823414587`.

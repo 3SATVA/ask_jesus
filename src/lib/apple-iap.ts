@@ -9,9 +9,11 @@ import {
 } from "@apple/app-store-server-library";
 import {
   entitlementAfterStatus,
+  entitlementForTransaction,
   pickEntitlement,
   storeTransactionFromDecoded,
   type GrantedEntitlement,
+  type StoreTransaction,
 } from "./entitlement";
 import { IOS_BUNDLE_ID, isMonthlyProduct } from "./products";
 
@@ -86,7 +88,10 @@ export function environmentOfJws(jws: string): Environment | null {
   }
 }
 
-function verifierFor(config: AppleIapConfig, environment: Environment) {
+function verifierFor(
+  config: { onlineChecks: boolean; bundleId: string; appAppleId?: number },
+  environment: Environment,
+) {
   return new SignedDataVerifier(
     rootCertificates(),
     config.onlineChecks,
@@ -155,36 +160,118 @@ async function authoritativeTransaction(
   return { transaction, status, gracePeriodExpiresMs };
 }
 
+export type AppleVerifyOptions = {
+  bundleId: string;
+  appAppleId?: number;
+  onlineChecks: boolean;
+  /** Present only when the App Store Server API key is configured. */
+  api: AppleIapConfig | null;
+};
+
 /**
- * Verify each StoreKit 2 JWS, then confirm it with the App Store Server API.
- * The API response is what grants access, so a refunded or expired purchase does not.
+ * StoreKit verification does not require an API key. The signed transaction's
+ * certificate chain is checked against Apple Root CA G3. The API is an extra
+ * check when APPLE_IAP_KEY_ID, APPLE_IAP_ISSUER_ID, and APPLE_IAP_PRIVATE_KEY are set.
+ */
+export function readAppleVerifyOptions(
+  env: Record<string, string | undefined> = process.env,
+): AppleVerifyOptions {
+  const api = readAppleIapConfig(env);
+  const appAppleIdRaw = env.APPLE_APP_APPLE_ID?.trim();
+  const appAppleId = appAppleIdRaw ? Number(appAppleIdRaw) : undefined;
+  return {
+    bundleId: api?.bundleId || env.APPLE_BUNDLE_ID?.trim() || IOS_BUNDLE_ID,
+    appAppleId:
+      appAppleId && Number.isInteger(appAppleId) ? appAppleId : api?.appAppleId,
+    onlineChecks: env.APPLE_IAP_ONLINE_CHECKS === "true" || Boolean(api?.onlineChecks),
+    api,
+  };
+}
+
+type ApiConfirmation = {
+  transaction: StoreTransaction;
+  status?: number;
+  gracePeriodExpiresMs: number | null;
+};
+
+export type AppleVerifyHooks = {
+  verifyTransaction?: (
+    signed: string,
+    environment: Environment,
+    options: AppleVerifyOptions,
+  ) => Promise<JWSTransactionDecodedPayload>;
+  confirmWithApi?: (
+    options: AppleVerifyOptions,
+    environment: Environment,
+    payload: JWSTransactionDecodedPayload,
+  ) => Promise<ApiConfirmation | null>;
+};
+
+async function verifyTransactionWithApple(
+  signed: string,
+  environment: Environment,
+  options: AppleVerifyOptions,
+) {
+  return verifierFor(options, environment).verifyAndDecodeTransaction(signed);
+}
+
+/**
+ * Verify each StoreKit 2 JWS locally. Sandbox and Production are both accepted.
+ * When an API key is configured, that confirmation is preferred. If the API
+ * itself cannot be reached, the already-verified signature still grants access.
  */
 export async function confirmSignedTransactions(
   signedTransactions: string[],
-  config: AppleIapConfig,
+  options: AppleVerifyOptions,
   now = new Date(),
+  hooks: AppleVerifyHooks = {},
 ): Promise<{ ok: true; entitlement: GrantedEntitlement } | { ok: false }> {
+  const verifyTransaction = hooks.verifyTransaction ?? verifyTransactionWithApple;
+  const confirmWithApi =
+    hooks.confirmWithApi ??
+    (async (verifyOptions, environment, payload) => {
+      if (!verifyOptions.api) return null;
+      return authoritativeTransaction(verifyOptions.api, environment, payload);
+    });
   const grants: GrantedEntitlement[] = [];
   for (const signed of signedTransactions) {
     const environment = environmentOfJws(signed);
     if (!environment || environment === Environment.XCODE || environment === Environment.LOCAL_TESTING) {
       continue;
     }
-    if (environment === Environment.PRODUCTION && !config.appAppleId) {
+    if (environment === Environment.PRODUCTION && !options.appAppleId) {
       console.error("ASK JESUS purchase: APPLE_APP_APPLE_ID is required for production transactions.");
       continue;
     }
     try {
-      const clientPayload = await verifierFor(config, environment).verifyAndDecodeTransaction(signed);
-      const confirmed = await authoritativeTransaction(config, environment, clientPayload);
-      if (!confirmed) continue;
-      const grant = entitlementAfterStatus(
-        confirmed.transaction,
-        confirmed.status,
-        confirmed.gracePeriodExpiresMs,
-        now,
-        config.bundleId,
-      );
+      const clientPayload = await verifyTransaction(signed, environment, options);
+      let grant: GrantedEntitlement | null = null;
+      if (options.api) {
+        try {
+          const confirmed = await confirmWithApi(options, environment, clientPayload);
+          if (!confirmed) continue;
+          grant = entitlementAfterStatus(
+            confirmed.transaction,
+            confirmed.status,
+            confirmed.gracePeriodExpiresMs,
+            now,
+            options.bundleId,
+          );
+          if (grant) grants.push(grant);
+          continue;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "unknown error";
+          console.error(
+            "ASK JESUS purchase: App Store Server API check failed; using the signed transaction.",
+            message,
+          );
+        }
+      }
+      if (!grant) {
+        const transaction = storeTransactionFromDecoded(clientPayload);
+        if (!transaction) continue;
+        grant = entitlementForTransaction(transaction, now, options.bundleId);
+      }
       if (grant) grants.push(grant);
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";

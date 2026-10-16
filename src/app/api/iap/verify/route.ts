@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { confirmSignedTransactions, readAppleIapConfig } from "@/lib/apple-iap";
+import { confirmSignedTransactions, readAppleVerifyOptions } from "@/lib/apple-iap";
 import { confirmGooglePurchases, readGooglePlayConfig } from "@/lib/google-play";
 import type { GrantedEntitlement } from "@/lib/entitlement";
 import { isKnownProduct } from "@/lib/products";
 import {
-  UNLOCK_COOKIE,
+  presentedUnlock,
   readUnlock,
+  reportMissingUnlockSecret,
   sealUnlock,
   unlockClearCookie,
   unlockMaxAgeSeconds,
@@ -32,27 +33,26 @@ function grantResponse(entitlement: GrantedEntitlement, secret: string, now: Dat
     transactionId: entitlement.transactionId,
     productId: entitlement.productId,
   };
+  const unlockToken = sealUnlock(payload, secret);
   return NextResponse.json(
     {
       unlocked: true,
       unlockKind: payload.kind,
       until: payload.until,
       productId: payload.productId,
+      unlockToken,
     },
     {
       headers: {
         "Cache-Control": "no-store",
-        "Set-Cookie": unlockSetCookie(
-          sealUnlock(payload, secret),
-          unlockMaxAgeSeconds(entitlement.until, now),
-        ),
+        "Set-Cookie": unlockSetCookie(unlockToken, unlockMaxAgeSeconds(entitlement.until, now)),
       },
     },
   );
 }
 
 function notConfirmed(request: NextRequest, secret: string, replace: boolean, now: Date) {
-  const existing = readUnlock(request.cookies.get(UNLOCK_COOKIE)?.value, secret, now);
+  const existing = readUnlock(presentedUnlock(request), secret, now);
   if (replace && existing?.kind === "subscription") {
     return NextResponse.json(
       { error: "not_confirmed", message: NOT_CONFIRMED, unlocked: false, unlockKind: null },
@@ -67,7 +67,10 @@ function notConfirmed(request: NextRequest, secret: string, replace: boolean, no
 
 export async function POST(request: NextRequest) {
   const secret = unlockSecret();
-  if (!secret) return notReady();
+  if (!secret) {
+    reportMissingUnlockSecret();
+    return notReady();
+  }
 
   let body: { signedTransactions?: unknown; googlePurchases?: unknown; replace?: unknown };
   try {
@@ -114,7 +117,7 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: { "Cache-Control": "no-store" } },
       );
     }
-    const existing = readUnlock(request.cookies.get(UNLOCK_COOKIE)?.value, secret, now);
+    const existing = readUnlock(presentedUnlock(request), secret, now);
     if (existing?.kind === "subscription") {
       return NextResponse.json(
         { unlocked: false, unlockKind: null },
@@ -135,9 +138,13 @@ export async function POST(request: NextRequest) {
     return grantResponse(result.entitlement, secret, now);
   }
 
-  const config = readAppleIapConfig();
-  if (!config) return notReady();
-  const result = await confirmSignedTransactions(signedTransactions, config, now);
+  const options = readAppleVerifyOptions();
+  if (!options.api) {
+    console.warn(
+      "ASK JESUS purchase: APPLE_IAP_KEY_ID, APPLE_IAP_ISSUER_ID, and APPLE_IAP_PRIVATE_KEY are unset. The signed transaction is verified from Apple's signature.",
+    );
+  }
+  const result = await confirmSignedTransactions(signedTransactions, options, now);
   if (!result.ok) return notConfirmed(request, secret, replace, now);
   return grantResponse(result.entitlement, secret, now);
 }
