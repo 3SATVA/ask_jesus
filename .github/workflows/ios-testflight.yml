@@ -74,7 +74,41 @@ jobs:
           text = re.sub(r"CURRENT_PROJECT_VERSION = [^;]+;", f"CURRENT_PROJECT_VERSION = {build};", text)
           text = re.sub(r"MARKETING_VERSION = [^;]+;", "MARKETING_VERSION = 1.0.0;", text)
           path.write_text(text)
+          print(f"Marketing version 1.0.0, build {build}")
           PY
+
+      - name: Select Xcode 26
+        run: |
+          set -euo pipefail
+          # macos-15 still defaults to Xcode 16.4 (iOS 18.5 SDK). App Store Connect
+          # rejects that SDK and requires the iOS 26 SDK from Xcode 26 or later.
+          XCODE_APP="$(python3 - << 'PY'
+          import pathlib, re, sys
+          apps = []
+          root = pathlib.Path("/Applications")
+          for path in root.glob("Xcode_26*.app"):
+              name = path.name
+              lowered = name.lower()
+              if "beta" in lowered or "release_candidate" in lowered or path.is_symlink():
+                  continue
+              match = re.search(r"Xcode_(\d+(?:\.\d+)*)\.app$", name)
+              if not match:
+                  continue
+              apps.append((tuple(int(part) for part in match.group(1).split(".")), path))
+          if not apps:
+              print("Xcode 26 is not installed. Found:", file=sys.stderr)
+              for path in sorted(root.glob("Xcode*.app")):
+                  print(path, file=sys.stderr)
+              raise SystemExit(1)
+          apps.sort()
+          print(apps[-1][1])
+          PY
+          )"
+          echo "Selecting $XCODE_APP"
+          sudo xcode-select -s "$XCODE_APP"
+          sudo xcodebuild -runFirstLaunch
+          xcodebuild -version
+          xcodebuild -showsdks | grep -E 'iphoneos' || true
 
       - name: Archive and upload with automatic signing
         run: |
@@ -121,10 +155,22 @@ jobs:
               -configuration Release -destination 'generic/platform=iOS' \
               -archivePath "$RUNNER_TEMP/App.xcarchive" archive
           fi
+          SDK_NAME="$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:DTSDKName' "$RUNNER_TEMP/App.xcarchive/Info.plist")"
+          echo "Archived with SDK $SDK_NAME"
+          case "$SDK_NAME" in
+            iphoneos2[6-9]*|iphoneos[3-9][0-9]*) ;;
+            *)
+              echo "Apple requires the iOS 26 SDK or later. This archive used $SDK_NAME"
+              exit 1
+              ;;
+          esac
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportPath "$RUNNER_TEMP/ios-export" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
           IPA="$(find "$RUNNER_TEMP/ios-export" -name '*.ipa' -print -quit)"
-          xcrun altool --upload-app --file "$IPA" --type ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          echo "Uploading $IPA"
+          # Xcode 26's altool fails to build the App Store Connect JWT. Transporter
+          # accepts the same API key files already written under ~/private_keys.
+          xcrun iTMSTransporter -m upload -assetFile "$IPA" -apiKey "$ASC_KEY_ID" -apiIssuer "$ASC_ISSUER_ID"
