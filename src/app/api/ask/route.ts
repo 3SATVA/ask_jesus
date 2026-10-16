@@ -21,6 +21,7 @@ import {
 } from "@/lib/config";
 import { instructionsForTurn } from "@/lib/prompt";
 import { QUOTA_COOKIE, parseQuota, quotaSetCookie } from "@/lib/quota";
+import { UNLOCK_SUPPRESS_HEADER, unlockSuppressedByHeader } from "@/lib/tester-device";
 import {
   presentedUnlock,
   readUnlock,
@@ -45,6 +46,7 @@ function quotaPayload(used: number, unlockKind: "day" | "subscription" | null) {
 }
 
 function unlockKindFor(request: NextRequest) {
+  if (unlockSuppressedByHeader(request.headers.get(UNLOCK_SUPPRESS_HEADER))) return null;
   const secret = unlockSecret();
   const presented = presentedUnlock(request);
   if (presented && !secret) {

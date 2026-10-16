@@ -14,7 +14,7 @@ import {
   refreshNativeEntitlement,
   type UnlockKind,
 } from "@/lib/storekit";
-import { unlockRequestHeaders } from "@/lib/unlock-token";
+import { TESTER_RESET_EVENT, askUnlockHeaders, unlockSuppressed } from "@/lib/tester-device";
 import type { StoreName } from "@/lib/products";
 
 type AskError = "invalid" | "limit" | "fair_use" | "missing_key" | "upstream" | "network";
@@ -102,7 +102,7 @@ export function AskPanel({
   }
 
   function reloadQuota() {
-    return fetch("/api/ask", { headers: unlockRequestHeaders(), credentials: "include" })
+    return fetch("/api/ask", { headers: askUnlockHeaders(), credentials: "include" })
       .then((response) => response.json())
       .then((data: { remaining?: number; limit?: number; unlocked?: boolean; unlockKind?: UnlockKind | null; fairUseRemaining?: number | null }) => {
         applyQuota(data);
@@ -114,6 +114,21 @@ export function AskPanel({
     return () => {
       if (noticeTimer.current) clearTimeout(noticeTimer.current);
     };
+  }, []);
+
+  useEffect(() => {
+    function onTesterReset(event: Event) {
+      const detail = (event as CustomEvent<{ unlockCleared?: boolean }>).detail;
+      if (detail?.unlockCleared) {
+        setUnlockKind(null);
+        setFairUseRemaining(null);
+      }
+      void reloadQuota();
+    }
+    window.addEventListener(TESTER_RESET_EVENT, onTesterReset);
+    return () => window.removeEventListener(TESTER_RESET_EVENT, onTesterReset);
+    // reloadQuota reads the latest unlock header when the tester sheet finishes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -160,11 +175,12 @@ export function AskPanel({
       if (!storeKind) return;
       try {
         const quota = await fetch("/api/ask", {
-          headers: unlockRequestHeaders(),
+          headers: askUnlockHeaders(),
           credentials: "include",
         }).then((response) => response.json());
         if (cancelled) return;
         applyQuota(quota);
+        if (unlockSuppressed()) return;
         await refreshNativeEntitlement(
           quota.unlockKind === "subscription" ? "subscription" : quota.unlockKind === "day" ? "day" : null,
         );
@@ -249,7 +265,7 @@ export function AskPanel({
     try {
       const response = await fetch("/api/ask", {
         method: "POST",
-        headers: unlockRequestHeaders({ "Content-Type": "application/json" }),
+        headers: askUnlockHeaders({ "Content-Type": "application/json" }),
         credentials: "include",
         body: JSON.stringify({
           messages: [...history, { role: "user", content: nextQuestion }],

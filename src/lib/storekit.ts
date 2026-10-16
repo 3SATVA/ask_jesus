@@ -9,6 +9,7 @@ import {
   isMonthlyProduct,
   type StoreName,
 } from "@/lib/products";
+import { setUnlockSuppressed, unlockSuppressed } from "@/lib/tester-device";
 import { applyUnlockResponse, unlockRequestHeaders } from "@/lib/unlock-token";
 
 export type UnlockKind = "day" | "subscription";
@@ -77,6 +78,7 @@ async function postVerify(body: {
     applyUnlockResponse(data);
     throw new Error(data?.message || "That purchase could not be confirmed.");
   }
+  if (data?.unlocked) setUnlockSuppressed(false);
   applyUnlockResponse(data);
   return data ?? {};
 }
@@ -213,6 +215,7 @@ export async function restorePurchases() {
  * day pass. A finished day pass stays in the stored unlock token.
  */
 export async function refreshNativeEntitlement(unlockKind: UnlockKind | null) {
+  if (unlockSuppressed()) return;
   const store = await nativeStore();
   if (!store) return;
   const { NativePurchases, PURCHASE_TYPE } = await nativePurchases();
@@ -253,6 +256,7 @@ export async function listenForUnfinishedTransactions(onGranted: () => void) {
   const { NativePurchases } = await nativePurchases();
   await NativePurchases.configure({ autoFinishTransactions: false });
   return NativePurchases.addListener("transactionUpdated", async (transaction) => {
+    if (unlockSuppressed()) return;
     if (!transaction.jwsRepresentation) return;
     try {
       await postVerify({ signedTransactions: [transaction.jwsRepresentation], replace: false });

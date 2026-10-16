@@ -45,6 +45,7 @@ Without that key, the page still loads. Asking a question returns a clear messag
 | `APPLE_APP_APPLE_ID` | For production purchases | Numeric Apple ID of the App Store app Ask AI Jesus (`6823414587`). Sandbox and TestFlight receipts can be checked without it. |
 | `APPLE_IAP_ONLINE_CHECKS` | No | Set to `true` to also check Apple’s certificate revocation. |
 | `UNLOCK_COOKIE_SECRET` | For app purchases | Signs the unlock token and cookie that remember a verified day pass or subscription. Purchases cannot be remembered until this is set on the server. |
+| `TESTER_RESET_CODE` | For re-testing the free limit | Code the owner types once in the hidden tester sheet (tap the ASK JESUS title 7 times). Reset and clear-unlock apply only to the current device. Do not commit a real value. |
 | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | For Android purchases | Service account JSON for the Google Play Developer API. Raw JSON or base64. The same JSON can be the GitHub secret used to upload an Android App Bundle. |
 | `GOOGLE_PLAY_PACKAGE_NAME` | No | Defaults to `com.starseedsquad.askjesus`. |
 

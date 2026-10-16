@@ -1,4 +1,5 @@
 import { AskPanel } from "@/components/ask-panel";
+import { AskTitle } from "@/components/ask-title";
 import { JesusScene } from "@/components/jesus-scene";
 import { ViewportShell } from "@/components/viewport-shell";
 import { dailyLimit, supportUrl, unlimitedDailyCap } from "@/lib/config";
@@ -7,9 +8,7 @@ export default function Home() {
   return (
     <ViewportShell>
       <JesusScene contained />
-      <h1 className="ask-title pointer-events-none text-center font-cinzel font-semibold">
-        ASK JESUS
-      </h1>
+      <AskTitle />
       <div className="chat-dock">
         <AskPanel
           supportUrl={supportUrl()}
