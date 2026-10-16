@@ -123,6 +123,12 @@ export function AskPanel({
   }, [hydrated, messages]);
 
   useEffect(() => {
+    if (
+      process.env.NODE_ENV === "development" &&
+      new URLSearchParams(window.location.search).get("preview") === "paywall"
+    ) {
+      return;
+    }
     reloadQuota().catch(() => {});
     // Quota is loaded once when the screen opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
