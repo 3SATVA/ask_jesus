@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
+import { unlimitedDailyCap } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Terms — ASK JESUS",
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function TermsPage() {
+  const cap = unlimitedDailyCap();
   return (
     <LegalPage
       title="Terms"
@@ -26,8 +28,14 @@ export default function TermsPage() {
         Purchase. There is no other way to pay inside the iOS app.
       </p>
       <ul className="list-disc space-y-2 pl-5">
-        <li>Unlimited today is a consumable. It unlocks unlimited messages until midnight UTC on the day it is bought.</li>
-        <li>Monthly is an auto-renewable subscription. It unlocks unlimited messages until the paid period ends.</li>
+        <li>
+          Unlimited today is a consumable. It unlocks messages until midnight UTC on the day it is
+          bought, up to {cap} messages that day.
+        </li>
+        <li>
+          Monthly is an auto-renewable subscription. It unlocks messages until the paid period
+          ends, up to {cap} messages each UTC day.
+        </li>
       </ul>
       <p>
         Payment is charged to your Apple ID at confirmation. The subscription renews each month

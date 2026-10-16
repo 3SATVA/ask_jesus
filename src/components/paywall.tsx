@@ -22,12 +22,14 @@ import {
 export function Paywall({
   open,
   reason,
+  unlimitedCap,
   subscriptionActive,
   onOpenChange,
   onUnlocked,
 }: {
   open: boolean;
   reason: "limit" | "support";
+  unlimitedCap: number;
   subscriptionActive: boolean;
   onOpenChange: (open: boolean) => void;
   onUnlocked: () => void;
@@ -78,8 +80,8 @@ export function Paywall({
           </DialogTitle>
           <DialogDescription className="text-base leading-7 text-[#f6efe2]">
             {reason === "limit"
-              ? "Today's free messages are used. Unlimited today opens the rest of this day. A month keeps every day open."
-              : "A few messages each day are free. Unlimited today opens the rest of this day. A month keeps every day open."}
+              ? `Today's free messages are used. Unlimited today opens the rest of this day. A month keeps every day open. Each includes ${unlimitedCap} messages in a day.`
+              : `A few messages each day are free. Unlimited today opens the rest of this day. A month keeps every day open. Each includes ${unlimitedCap} messages in a day.`}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2">
@@ -126,7 +128,8 @@ export function Paywall({
         <p className="text-xs leading-5 text-[#cbbfa8]">
           Apple charges your Apple ID. Unlimited today is used once and lasts until midnight UTC.
           The monthly subscription renews each month until you cancel it in Settings, at least a
-          day before the period ends.{" "}
+          day before the period ends. A fair-use cap of {unlimitedCap} messages applies each UTC
+          day.{" "}
           <Link href="/privacy" className="text-[#f0d48a] underline underline-offset-4">
             Privacy Policy
           </Link>

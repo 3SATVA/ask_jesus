@@ -2,6 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { createTextStreamResponse, streamText, type ModelMessage } from "ai";
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  FAIR_USE_MESSAGE,
   INVALID_MESSAGE,
   LIMIT_MESSAGE,
   MISSING_KEY_MESSAGE,
@@ -13,8 +14,10 @@ import { crisisMessage } from "@/lib/crisis";
 import {
   dailyLimit,
   hasOpenAIKey,
+  maxOutputTokens,
   openaiModel,
   supportUrl,
+  unlimitedDailyCap,
 } from "@/lib/config";
 import { instructionsForTurn } from "@/lib/prompt";
 import { QUOTA_COOKIE, parseQuota, quotaSetCookie } from "@/lib/quota";
@@ -24,12 +27,14 @@ export const maxDuration = 60;
 
 function quotaPayload(used: number, unlockKind: "day" | "subscription" | null) {
   const limit = dailyLimit();
+  const cap = unlimitedDailyCap();
   return {
     used,
     limit,
     remaining: Math.max(0, limit - used),
     unlocked: Boolean(unlockKind),
     unlockKind,
+    fairUseRemaining: unlockKind ? Math.max(0, cap - used) : null,
     supportUrl: supportUrl(),
   };
 }
@@ -47,7 +52,7 @@ export async function GET(request: NextRequest) {
 
 function jsonError(
   status: number,
-  error: "invalid" | "limit" | "missing_key" | "upstream",
+  error: "invalid" | "limit" | "fair_use" | "missing_key" | "upstream",
   message: string,
   used: number,
   unlockKind: "day" | "subscription" | null,
@@ -88,6 +93,7 @@ export async function POST(request: NextRequest) {
   const question = conversation?.question ?? null;
   const used = parseQuota(request.cookies.get(QUOTA_COOKIE)?.value);
   const limit = dailyLimit();
+  const cap = unlimitedDailyCap();
   const unlockKind = unlockKindFor(request);
   const decision = decideAsk({
     question,
@@ -95,6 +101,7 @@ export async function POST(request: NextRequest) {
     limit,
     hasKey: hasOpenAIKey(),
     unlocked: Boolean(unlockKind),
+    unlimitedCap: cap,
   });
 
   if (decision.type === "invalid") {
@@ -112,6 +119,10 @@ export async function POST(request: NextRequest) {
     return jsonError(429, "limit", LIMIT_MESSAGE, used, unlockKind);
   }
 
+  if (decision.type === "fair_use") {
+    return jsonError(429, "fair_use", FAIR_USE_MESSAGE, used, unlockKind);
+  }
+
   if (decision.type === "missing_key") {
     return jsonError(503, "missing_key", MISSING_KEY_MESSAGE, used, unlockKind);
   }
@@ -121,17 +132,18 @@ export async function POST(request: NextRequest) {
   }
 
   const nextUsed = used + 1;
+  const fairUseRemaining = Math.max(0, cap - used);
   const messages: ModelMessage[] = [
     ...conversation.history,
     { role: "user", content: conversation.question },
   ];
   const result = streamText({
     model: openai(openaiModel()),
-    instructions: instructionsForTurn(Math.max(0, limit - used), {
-      unlimited: Boolean(unlockKind),
+    instructions: instructionsForTurn(unlockKind ? fairUseRemaining : Math.max(0, limit - used), {
+      unlimited: Boolean(unlockKind) && fairUseRemaining > 1,
     }),
     messages,
-    maxOutputTokens: 420,
+    maxOutputTokens: maxOutputTokens(),
     providerOptions: {
       openai: { reasoningEffort: "low" },
     },
@@ -184,6 +196,9 @@ export async function POST(request: NextRequest) {
       "Set-Cookie": quotaSetCookie(nextUsed),
       "X-Questions-Remaining": String(Math.max(0, limit - nextUsed)),
       "X-Questions-Unlocked": unlockKind ? "1" : "0",
+      ...(unlockKind
+        ? { "X-Fair-Use-Remaining": String(Math.max(0, cap - nextUsed)) }
+        : {}),
     },
   });
 }

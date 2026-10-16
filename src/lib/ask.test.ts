@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { decideAsk } from "./ask";
-import { DEFAULT_DAILY_LIMIT, dailyLimit } from "./config";
+import {
+  DEFAULT_DAILY_LIMIT,
+  DEFAULT_MAX_OUTPUT_TOKENS,
+  DEFAULT_UNLIMITED_DAILY_CAP,
+  dailyLimit,
+  maxOutputTokens,
+  unlimitedDailyCap,
+} from "./config";
 import { detectCrisis } from "./crisis";
 import { parseQuota } from "./quota";
 
@@ -37,6 +44,38 @@ describe("dailyLimit", () => {
   });
 });
 
+describe("unlimitedDailyCap", () => {
+  it("defaults the fair-use cap to 300 and ignores values outside 1–10000", () => {
+    const previous = process.env.UNLIMITED_DAILY_CAP;
+    delete process.env.UNLIMITED_DAILY_CAP;
+    assert.equal(DEFAULT_UNLIMITED_DAILY_CAP, 300);
+    assert.equal(unlimitedDailyCap(), 300);
+    process.env.UNLIMITED_DAILY_CAP = "120";
+    assert.equal(unlimitedDailyCap(), 120);
+    process.env.UNLIMITED_DAILY_CAP = "0";
+    assert.equal(unlimitedDailyCap(), 300);
+    process.env.UNLIMITED_DAILY_CAP = "10001";
+    assert.equal(unlimitedDailyCap(), 300);
+    if (previous === undefined) delete process.env.UNLIMITED_DAILY_CAP;
+    else process.env.UNLIMITED_DAILY_CAP = previous;
+  });
+});
+
+describe("maxOutputTokens", () => {
+  it("defaults the reply cap to 420 tokens", () => {
+    const previous = process.env.MAX_OUTPUT_TOKENS;
+    delete process.env.MAX_OUTPUT_TOKENS;
+    assert.equal(DEFAULT_MAX_OUTPUT_TOKENS, 420);
+    assert.equal(maxOutputTokens(), 420);
+    process.env.MAX_OUTPUT_TOKENS = "256";
+    assert.equal(maxOutputTokens(), 256);
+    process.env.MAX_OUTPUT_TOKENS = "16";
+    assert.equal(maxOutputTokens(), 420);
+    if (previous === undefined) delete process.env.MAX_OUTPUT_TOKENS;
+    else process.env.MAX_OUTPUT_TOKENS = previous;
+  });
+});
+
 describe("decideAsk", () => {
   const base = { used: 0, limit: 10, hasKey: true };
 
@@ -55,6 +94,37 @@ describe("decideAsk", () => {
     assert.deepEqual(
       decideAsk({ ...base, question: "How do I forgive?", used: 10, unlocked: true }),
       { type: "answer" },
+    );
+    assert.deepEqual(
+      decideAsk({
+        ...base,
+        question: "How do I forgive?",
+        used: 299,
+        unlocked: true,
+        unlimitedCap: 300,
+      }),
+      { type: "answer" },
+    );
+    assert.deepEqual(
+      decideAsk({
+        ...base,
+        question: "How do I forgive?",
+        used: 300,
+        unlocked: true,
+        unlimitedCap: 300,
+      }),
+      { type: "fair_use" },
+    );
+    assert.deepEqual(
+      decideAsk({
+        ...base,
+        question: "I want to die",
+        used: 300,
+        unlocked: true,
+        unlimitedCap: 300,
+        hasKey: false,
+      }),
+      { type: "crisis", kind: "self-harm" },
     );
     assert.deepEqual(
       decideAsk({ ...base, question: "How do I forgive?", hasKey: false }),

@@ -4,6 +4,9 @@ export const MISSING_KEY_MESSAGE =
 export const LIMIT_MESSAGE =
   "You have reached today’s free questions. Come back tomorrow — and if this ministry has been a help, you are welcome to support it.";
 
+export const FAIR_USE_MESSAGE =
+  "You have shared many words today. Rest until tomorrow, and I will be here.";
+
 export const INVALID_MESSAGE =
   "Ask a little more. A short question from the heart is enough.";
 

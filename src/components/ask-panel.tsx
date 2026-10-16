@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Paywall } from "@/components/paywall";
 import { ReplyText } from "@/components/reply-text";
-import { LIMIT_MESSAGE } from "@/lib/messages";
+import { FAIR_USE_MESSAGE, LIMIT_MESSAGE } from "@/lib/messages";
 import {
   isIosNative,
   listenForUnfinishedTransactions,
@@ -14,7 +14,7 @@ import {
   type UnlockKind,
 } from "@/lib/storekit";
 
-type AskError = "invalid" | "limit" | "missing_key" | "upstream" | "network";
+type AskError = "invalid" | "limit" | "fair_use" | "missing_key" | "upstream" | "network";
 
 type ChatMessage = {
   id: string;
@@ -58,7 +58,9 @@ function remainingLabel(
   remaining: number | null,
   limit: number,
   unlockKind: UnlockKind | null,
+  fairUseReached: boolean,
 ) {
+  if (fairUseReached) return "Rest until tomorrow";
   if (unlockKind === "subscription") return "Unlimited this month";
   if (unlockKind === "day") return "Unlimited for the rest of today";
   if (remaining == null) return "A few quiet questions, each day.";
@@ -69,9 +71,11 @@ function remainingLabel(
 export function AskPanel({
   supportUrl,
   initialLimit,
+  unlimitedCap,
 }: {
   supportUrl: string;
   initialLimit: number;
+  unlimitedCap: number;
 }) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>(() => [openingMessage()]);
@@ -83,6 +87,7 @@ export function AskPanel({
   const [remaining, setRemaining] = useState<number | null>(null);
   const [limit, setLimit] = useState(initialLimit);
   const [unlockKind, setUnlockKind] = useState<UnlockKind | null>(null);
+  const [fairUseRemaining, setFairUseRemaining] = useState<number | null>(null);
   const [platform, setPlatform] = useState<"unknown" | "ios" | "web">("unknown");
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<"limit" | "support">("support");
@@ -94,18 +99,21 @@ export function AskPanel({
     limit?: number;
     unlocked?: boolean;
     unlockKind?: UnlockKind | null;
+    fairUseRemaining?: number | null;
   }) {
     if (typeof data.remaining === "number") setRemaining(data.remaining);
     if (typeof data.limit === "number") setLimit(data.limit);
     if (typeof data.unlocked === "boolean") {
       setUnlockKind(data.unlocked ? data.unlockKind ?? "day" : null);
     }
+    if (typeof data.fairUseRemaining === "number") setFairUseRemaining(data.fairUseRemaining);
+    else if (data.fairUseRemaining === null || data.unlocked === false) setFairUseRemaining(null);
   }
 
   function reloadQuota() {
     return fetch("/api/ask")
       .then((response) => response.json())
-      .then((data: { remaining?: number; limit?: number; unlocked?: boolean; unlockKind?: UnlockKind | null }) => {
+      .then((data: { remaining?: number; limit?: number; unlocked?: boolean; unlockKind?: UnlockKind | null; fairUseRemaining?: number | null }) => {
         applyQuota(data);
         return data.unlockKind ?? null;
       });
@@ -187,16 +195,18 @@ export function AskPanel({
 
   const streaming = status === "streaming";
   const iosApp = platform === "ios";
-  const atLimit = remaining === 0 && !unlockKind;
+  const freeLimitReached = remaining === 0 && !unlockKind;
+  const fairUseReached = unlockKind != null && fairUseRemaining === 0;
+  const atLimit = freeLimitReached || fairUseReached;
   const canAsk = question.trim().length >= 2 && !streaming && !atLimit;
   const hasConversation = messages.some((message) => message.text.trim());
 
   useEffect(() => {
-    if (iosApp && atLimit && !streaming) {
+    if (iosApp && freeLimitReached && !streaming) {
       setPaywallReason("limit");
       setPaywallOpen(true);
     }
-  }, [iosApp, atLimit, streaming]);
+  }, [iosApp, freeLimitReached, streaming]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -224,6 +234,12 @@ export function AskPanel({
     const rollback = (message: string, code: AskError) => {
       setMessages((current) => current.filter((item) => item.id !== jesusId && item.id !== userId));
       setQuestion(nextQuestion);
+      if (code === "fair_use") {
+        setFairUseRemaining(0);
+        setError("");
+        setStatus("idle");
+        return;
+      }
       setStatus("error");
       setError(message);
       if (code === "limit") setRemaining(0);
@@ -244,7 +260,15 @@ export function AskPanel({
         if (Number.isInteger(nextRemaining)) setRemaining(nextRemaining);
       }
       const unlockedHeader = response.headers.get("x-questions-unlocked");
-      if (unlockedHeader === "0") setUnlockKind(null);
+      if (unlockedHeader === "0") {
+        setUnlockKind(null);
+        setFairUseRemaining(null);
+      }
+      const fairHeader = response.headers.get("x-fair-use-remaining");
+      if (fairHeader != null && fairHeader !== "") {
+        const nextFair = Number(fairHeader);
+        if (Number.isInteger(nextFair)) setFairUseRemaining(nextFair);
+      }
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as {
@@ -253,6 +277,7 @@ export function AskPanel({
           remaining?: number;
           unlocked?: boolean;
           unlockKind?: UnlockKind | null;
+          fairUseRemaining?: number | null;
         } | null;
         if (typeof data?.remaining === "number") setRemaining(data.remaining);
         if (typeof data?.unlocked === "boolean") {
@@ -346,7 +371,12 @@ export function AskPanel({
             {error}
           </p>
         ) : null}
-        {atLimit && !streaming && !iosApp ? (
+        {fairUseReached && !streaming ? (
+          <p className="mb-2 px-1 text-sm leading-6 text-[#f7f1e4]" role="status">
+            {FAIR_USE_MESSAGE}
+          </p>
+        ) : null}
+        {freeLimitReached && !streaming && !iosApp ? (
           <p className="mb-2 px-1 text-sm leading-6 text-[#f7f1e4]" role="status">
             {LIMIT_MESSAGE}
           </p>
@@ -386,7 +416,7 @@ export function AskPanel({
         <footer className="composer-footer mt-2 flex flex-col items-center gap-1 px-2 text-center">
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-white/75">
             <span className="drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)]">
-              {remainingLabel(remaining, limit, unlockKind)}
+              {remainingLabel(remaining, limit, unlockKind, fairUseReached)}
             </span>
             {hasConversation ? (
               <button
@@ -408,7 +438,7 @@ export function AskPanel({
               <button
                 type="button"
                 onClick={() => {
-                  setPaywallReason(atLimit ? "limit" : "support");
+                  setPaywallReason(freeLimitReached ? "limit" : "support");
                   setPaywallOpen(true);
                 }}
                 className="tracking-[0.14em] uppercase drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)] hover:text-white"
@@ -431,6 +461,7 @@ export function AskPanel({
         <Paywall
           open={paywallOpen}
           reason={paywallReason}
+          unlimitedCap={unlimitedCap}
           subscriptionActive={unlockKind === "subscription"}
           onOpenChange={setPaywallOpen}
           onUnlocked={() => {
