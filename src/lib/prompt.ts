@@ -22,6 +22,9 @@ export function questionsLeftNote(remaining: number) {
 }
 
 /** Personality plus the server note about how many messages remain today. */
-export function instructionsForTurn(remaining: number) {
-  return `${loadJesusPrompt()}\n\n${questionsLeftNote(remaining)}`;
+export function instructionsForTurn(remaining: number, options?: { unlimited?: boolean }) {
+  const note = options?.unlimited
+    ? "The person has unlimited messages right now. This is not their last message. Keep the conversation going."
+    : questionsLeftNote(remaining);
+  return `${loadJesusPrompt()}\n\n${note}`;
 }

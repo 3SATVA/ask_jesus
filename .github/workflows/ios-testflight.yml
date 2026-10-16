@@ -1,0 +1,115 @@
+# Manual TestFlight upload for Ask Jesus AI.
+# Do not run this until the App Store Connect steps in store-assets/APP_STORE.md are done.
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CAPACITOR_SERVER_URL: ${{ secrets.CAPACITOR_SERVER_URL }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Write the App Store Connect API key
+        run: |
+          python3 - << 'PY'
+          import base64, os, pathlib
+          key_id = os.environ["ASC_KEY_ID"].strip()
+          issuer = os.environ["ASC_ISSUER_ID"].strip()
+          team = os.environ["APPLE_TEAM_ID"].strip()
+          raw = os.environ["ASC_PRIVATE_KEY"].strip()
+          if not key_id or not issuer or not team or not raw:
+              raise SystemExit("ASC_KEY_ID, ASC_ISSUER_ID, ASC_PRIVATE_KEY, and APPLE_TEAM_ID are required.")
+          if "BEGIN" not in raw:
+              raw = base64.b64decode(raw).decode()
+          raw = raw.replace("\\n", "\n")
+          if not raw.endswith("\n"):
+              raw += "\n"
+          for folder in (pathlib.Path.home() / "private_keys", pathlib.Path("private_keys")):
+              folder.mkdir(mode=0o700, exist_ok=True)
+              path = folder / f"AuthKey_{key_id}.p8"
+              path.write_text(raw)
+              path.chmod(0o600)
+          print(f"API key written for {key_id}")
+          PY
+
+      - name: Sync the iOS shell
+        run: npx cap sync ios
+
+      - name: Set the build number
+        run: |
+          python3 - << 'PY'
+          import os, pathlib, re
+          path = pathlib.Path("ios/App/App.xcodeproj/project.pbxproj")
+          text = path.read_text()
+          build = os.environ.get("GITHUB_RUN_NUMBER", "1")
+          text = re.sub(r"CURRENT_PROJECT_VERSION = [^;]+;", f"CURRENT_PROJECT_VERSION = {build};", text)
+          text = re.sub(r"MARKETING_VERSION = [^;]+;", "MARKETING_VERSION = 1.0.0;", text)
+          path.write_text(text)
+          PY
+
+      - name: Archive and upload with automatic signing
+        run: |
+          set -euo pipefail
+          KEY_PATH="$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          mkdir -p "$RUNNER_TEMP/ios-export"
+          cat > "$RUNNER_TEMP/ExportOptions.plist" << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>teamID</key>
+            <string>${APPLE_TEAM_ID}</string>
+            <key>destination</key>
+            <string>export</string>
+            <key>manageAppVersionAndBuildNumber</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+          if [ -d ios/App/App.xcworkspace ]; then
+            xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
+              -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+              -allowProvisioningUpdates DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
+              IPHONEOS_DEPLOYMENT_TARGET=15.0 archive \
+              -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" \
+              -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          else
+            xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+              -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+              -allowProvisioningUpdates DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
+              IPHONEOS_DEPLOYMENT_TARGET=15.0 archive \
+              -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" \
+              -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          fi
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportPath "$RUNNER_TEMP/ios-export" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          IPA="$(find "$RUNNER_TEMP/ios-export" -name '*.ipa' -print -quit)"
+          xcrun altool --upload-app --file "$IPA" --type ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"

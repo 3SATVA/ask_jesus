@@ -158,12 +158,24 @@ export default function AboutPage() {
           </ul>
         </section>
 
-        <p className="text-center">
+        <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center text-sm">
           <Link
             href="/"
-            className="text-sm text-[#f0d48a] underline decoration-[rgba(240,212,138,0.45)] underline-offset-4"
+            className="text-[#f0d48a] underline decoration-[rgba(240,212,138,0.45)] underline-offset-4"
           >
             Return to ask
+          </Link>
+          <Link
+            href="/privacy"
+            className="text-[#f0d48a] underline decoration-[rgba(240,212,138,0.45)] underline-offset-4"
+          >
+            Privacy
+          </Link>
+          <Link
+            href="/terms"
+            className="text-[#f0d48a] underline decoration-[rgba(240,212,138,0.45)] underline-offset-4"
+          >
+            Terms
           </Link>
         </p>
       </article>

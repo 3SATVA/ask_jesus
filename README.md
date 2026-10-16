@@ -34,19 +34,32 @@ Without that key, the page still loads. Asking a question returns a clear messag
 | `OPENAI_API_KEY` | Yes | Authenticates the server to OpenAI. The [AI SDK](https://ai-sdk.dev) OpenAI provider reads this variable. Do not expose it to the browser. |
 | `OPENAI_MODEL` | No | OpenAI model ID. Defaults to `gpt-6-luna`, a small, current, low-cost chat model. Pick an ID from the [OpenAI models](https://developers.openai.com/api/docs/models) list. |
 | `DAILY_QUESTION_LIMIT` | No | Free questions per browser per UTC day. Defaults to `10`. Stored in an httpOnly cookie named `ask_jesus_quota`. This is a simple per-browser stub, not an account. |
-| `NEXT_PUBLIC_SUPPORT_URL` | No | Destination for the “Support this ministry” link. Leave it unset and the link explains that a giving page can be connected. |
+| `UNLIMITED_DAILY_CAP` | No | Fair-use cap for a verified day pass or monthly subscription, per UTC day. Defaults to `300`. The same quota cookie counts these messages. Crisis replies do not count. |
+| `MAX_OUTPUT_TOKENS` | No | Hard cap on tokens generated for one reply. Defaults to `420`. Values outside 64–2000 are ignored. |
+| `NEXT_PUBLIC_SUPPORT_URL` | No | Destination for the “Support this ministry” link on the website. Leave it unset and the link explains that a giving page can be connected. The iOS and Android apps do not open this link. The website has no checkout and does not use Stripe. |
 | `NEXT_PUBLIC_SITE_URL` | No | Absolute site URL for link previews. On Vercel, `VERCEL_PROJECT_PRODUCTION_URL` is used when this is unset. Otherwise the URL is `https://ask-jesus-lake.vercel.app`. |
+| `APPLE_IAP_KEY_ID` | For iOS purchases | Key ID of the In-App Purchase key from App Store Connect. This can be a different key from the TestFlight API key. |
+| `APPLE_IAP_ISSUER_ID` | For iOS purchases | Issuer ID for that key. |
+| `APPLE_IAP_PRIVATE_KEY` | For iOS purchases | The `.p8` contents. Newlines may be written as `\n`. |
+| `APPLE_BUNDLE_ID` | No | Defaults to `com.starseedsquad.askjesus`. |
+| `APPLE_APP_APPLE_ID` | For production purchases | The app’s numeric Apple ID. Sandbox and TestFlight receipts can be checked without it. |
+| `APPLE_IAP_ONLINE_CHECKS` | No | Set to `true` to also check Apple’s certificate revocation. Confirmation with the App Store Server API happens either way. |
+| `UNLOCK_COOKIE_SECRET` | For app purchases | Signs the cookie that remembers a verified day pass or subscription. |
+| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | For Android purchases | Service account JSON for the Google Play Developer API. Raw JSON or base64. The same JSON can be the GitHub secret used to upload an Android App Bundle. |
+| `GOOGLE_PLAY_PACKAGE_NAME` | No | Defaults to `com.starseedsquad.askjesus`. |
 
-Changing `NEXT_PUBLIC_*` values requires a new build.
+The iOS shell, product IDs, GitHub secrets, and the App Store Connect checklist are in `store-assets/APP_STORE.md`. The Android shell and Play Console checklist are in `store-assets/PLAY_STORE.md`.
+
+Changing `NEXT_PUBLIC_*` values requires a new build. The paywall, terms, and privacy pages also show `UNLIMITED_DAILY_CAP` from the build. The API enforces that cap, and `MAX_OUTPUT_TOKENS`, on each request.
 
 ## How a question is answered
 
 `POST /api/ask` checks the question, then:
 
 1. If it sounds like someone is in danger, it streams a short compassionate reply with real help (988, the National Domestic Violence Hotline, Childhelp, or 911). That reply does not count against the daily limit.
-2. If the daily limit is used up, it returns a friendly note and the support link.
+2. If the daily limit is used up, it returns a friendly note and the support link. A verified iOS or Android purchase skips that free limit: Unlimited today lasts until the end of that UTC day, and the monthly subscription lasts until the store says it expires. Either purchase still stops at `UNLIMITED_DAILY_CAP` messages in that UTC day (default 300). The reply asks them to rest until tomorrow. The website never offers those purchases and does not use Stripe.
 3. If `OPENAI_API_KEY` is not configured, it returns a clear error.
-4. Otherwise it streams a reply with `streamText` from the AI SDK and the OpenAI provider. The recent conversation is sent with the new question, so the reply can remember what was already said. Only the new question counts against the daily limit. The browser keeps the current conversation in `localStorage`. GPT-6 models, including the default, do not accept a temperature setting, so the request does not send one.
+4. Otherwise it streams a reply with `streamText` from the AI SDK and the OpenAI provider. Each reply is limited to `MAX_OUTPUT_TOKENS` (default 420). The recent conversation is sent with the new question, so the reply can remember what was already said. Only the new question counts against the daily limit. The browser keeps the current conversation in `localStorage`. GPT-6 models, including the default, do not accept a temperature setting, so the request does not send one.
 
 A scripture quotation is marked on its own line as `> Exact words. (Book 1:1)`. The chat renders that line in italic gold, with the reference beside it. Those marked quotations are from the Hebrew scriptures. Gospel sentences stay in his own voice and are not marked that way.
 
@@ -56,7 +69,7 @@ A scripture quotation is marked on its own line as `> Exact words. (Book 1:1)`. 
 
 1. Push this project to a Git repository and import it in Vercel. Framework preset: Next.js. No extra build settings.
 2. Add `OPENAI_API_KEY` in Project Settings → Environment Variables. Create the key in the [OpenAI API keys](https://platform.openai.com/api-keys) dashboard.
-3. Optionally set `OPENAI_MODEL`, `DAILY_QUESTION_LIMIT`, `NEXT_PUBLIC_SUPPORT_URL`, and `NEXT_PUBLIC_SITE_URL`.
+3. Optionally set `OPENAI_MODEL`, `DAILY_QUESTION_LIMIT`, `UNLIMITED_DAILY_CAP`, `MAX_OUTPUT_TOKENS`, `NEXT_PUBLIC_SUPPORT_URL`, and `NEXT_PUBLIC_SITE_URL`.
 4. Deploy. Streaming runs on the default Node.js runtime.
 
 ## Scripts

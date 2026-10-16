@@ -4,10 +4,18 @@ import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "re
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Paywall } from "@/components/paywall";
 import { ReplyText } from "@/components/reply-text";
-import { LIMIT_MESSAGE } from "@/lib/messages";
+import { FAIR_USE_MESSAGE, LIMIT_MESSAGE } from "@/lib/messages";
+import {
+  listenForUnfinishedTransactions,
+  nativeStore,
+  refreshNativeEntitlement,
+  type UnlockKind,
+} from "@/lib/storekit";
+import type { StoreName } from "@/lib/products";
 
-type AskError = "invalid" | "limit" | "missing_key" | "upstream" | "network";
+type AskError = "invalid" | "limit" | "fair_use" | "missing_key" | "upstream" | "network";
 
 type ChatMessage = {
   id: string;
@@ -47,7 +55,15 @@ function loadMessages() {
   }
 }
 
-function remainingLabel(remaining: number | null, limit: number) {
+function remainingLabel(
+  remaining: number | null,
+  limit: number,
+  unlockKind: UnlockKind | null,
+  fairUseReached: boolean,
+) {
+  if (fairUseReached) return "Rest until tomorrow";
+  if (unlockKind === "subscription") return "Unlimited this month";
+  if (unlockKind === "day") return "Unlimited for the rest of today";
   if (remaining == null) return "A few quiet questions, each day.";
   if (remaining === 1) return "1 question left today";
   return `${remaining} of ${limit} questions left today`;
@@ -56,9 +72,11 @@ function remainingLabel(remaining: number | null, limit: number) {
 export function AskPanel({
   supportUrl,
   initialLimit,
+  unlimitedCap,
 }: {
   supportUrl: string;
   initialLimit: number;
+  unlimitedCap: number;
 }) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>(() => [openingMessage()]);
@@ -69,8 +87,38 @@ export function AskPanel({
   const [error, setError] = useState("");
   const [remaining, setRemaining] = useState<number | null>(null);
   const [limit, setLimit] = useState(initialLimit);
+  const [unlockKind, setUnlockKind] = useState<UnlockKind | null>(null);
+  const [fairUseRemaining, setFairUseRemaining] = useState<number | null>(null);
+  const [platform, setPlatform] = useState<"unknown" | "ios" | "android" | "web">("unknown");
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallReason, setPaywallReason] = useState<"limit" | "support">("support");
   const [supportNote, setSupportNote] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
+
+  function applyQuota(data: {
+    remaining?: number;
+    limit?: number;
+    unlocked?: boolean;
+    unlockKind?: UnlockKind | null;
+    fairUseRemaining?: number | null;
+  }) {
+    if (typeof data.remaining === "number") setRemaining(data.remaining);
+    if (typeof data.limit === "number") setLimit(data.limit);
+    if (typeof data.unlocked === "boolean") {
+      setUnlockKind(data.unlocked ? data.unlockKind ?? "day" : null);
+    }
+    if (typeof data.fairUseRemaining === "number") setFairUseRemaining(data.fairUseRemaining);
+    else if (data.fairUseRemaining === null || data.unlocked === false) setFairUseRemaining(null);
+  }
+
+  function reloadQuota() {
+    return fetch("/api/ask")
+      .then((response) => response.json())
+      .then((data: { remaining?: number; limit?: number; unlocked?: boolean; unlockKind?: UnlockKind | null; fairUseRemaining?: number | null }) => {
+        applyQuota(data);
+        return data.unlockKind ?? null;
+      });
+  }
 
   useEffect(() => {
     const stored = loadMessages();
@@ -84,18 +132,60 @@ export function AskPanel({
   }, [hydrated, messages]);
 
   useEffect(() => {
+    if (
+      process.env.NODE_ENV === "development" &&
+      new URLSearchParams(window.location.search).get("preview") === "paywall"
+    ) {
+      return;
+    }
+    reloadQuota().catch(() => {});
+    // Quota is loaded once when the screen opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
-    fetch("/api/ask")
-      .then((response) => response.json())
-      .then((data: { remaining?: number; limit?: number }) => {
+    let removeListener = () => {};
+    (async () => {
+      if (
+        process.env.NODE_ENV === "development" &&
+        new URLSearchParams(window.location.search).get("preview") === "paywall"
+      ) {
+        setPlatform(new URLSearchParams(window.location.search).get("store") === "google" ? "android" : "ios");
+        setRemaining(0);
+        setUnlockKind(null);
+        setPaywallReason("limit");
+        setPaywallOpen(true);
+        return;
+      }
+      const storeKind = await nativeStore();
+      if (cancelled) return;
+      setPlatform(storeKind === "apple" ? "ios" : storeKind === "google" ? "android" : "web");
+      if (!storeKind) return;
+      try {
+        const quota = await fetch("/api/ask").then((response) => response.json());
         if (cancelled) return;
-        if (typeof data.remaining === "number") setRemaining(data.remaining);
-        if (typeof data.limit === "number") setLimit(data.limit);
-      })
-      .catch(() => {});
+        applyQuota(quota);
+        await refreshNativeEntitlement(
+          quota.unlockKind === "subscription" ? "subscription" : quota.unlockKind === "day" ? "day" : null,
+        );
+        if (!cancelled) await reloadQuota();
+        const handle = await listenForUnfinishedTransactions(() => {
+          void reloadQuota();
+        });
+        removeListener = () => {
+          void handle.remove();
+        };
+      } catch {
+        // A failed refresh leaves the free quota in place.
+      }
+    })();
     return () => {
       cancelled = true;
+      removeListener();
     };
+    // The native bridge is checked once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -105,9 +195,20 @@ export function AskPanel({
   }, [messages, status, error]);
 
   const streaming = status === "streaming";
-  const atLimit = remaining === 0;
+  const nativeApp = platform === "ios" || platform === "android";
+  const store: StoreName = platform === "android" ? "google" : "apple";
+  const freeLimitReached = remaining === 0 && !unlockKind;
+  const fairUseReached = unlockKind != null && fairUseRemaining === 0;
+  const atLimit = freeLimitReached || fairUseReached;
   const canAsk = question.trim().length >= 2 && !streaming && !atLimit;
   const hasConversation = messages.some((message) => message.text.trim());
+
+  useEffect(() => {
+    if (nativeApp && freeLimitReached && !streaming) {
+      setPaywallReason("limit");
+      setPaywallOpen(true);
+    }
+  }, [nativeApp, freeLimitReached, streaming]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -135,6 +236,12 @@ export function AskPanel({
     const rollback = (message: string, code: AskError) => {
       setMessages((current) => current.filter((item) => item.id !== jesusId && item.id !== userId));
       setQuestion(nextQuestion);
+      if (code === "fair_use") {
+        setFairUseRemaining(0);
+        setError("");
+        setStatus("idle");
+        return;
+      }
       setStatus("error");
       setError(message);
       if (code === "limit") setRemaining(0);
@@ -154,14 +261,30 @@ export function AskPanel({
         const nextRemaining = Number(remainingHeader);
         if (Number.isInteger(nextRemaining)) setRemaining(nextRemaining);
       }
+      const unlockedHeader = response.headers.get("x-questions-unlocked");
+      if (unlockedHeader === "0") {
+        setUnlockKind(null);
+        setFairUseRemaining(null);
+      }
+      const fairHeader = response.headers.get("x-fair-use-remaining");
+      if (fairHeader != null && fairHeader !== "") {
+        const nextFair = Number(fairHeader);
+        if (Number.isInteger(nextFair)) setFairUseRemaining(nextFair);
+      }
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as {
           error?: AskError;
           message?: string;
           remaining?: number;
+          unlocked?: boolean;
+          unlockKind?: UnlockKind | null;
+          fairUseRemaining?: number | null;
         } | null;
         if (typeof data?.remaining === "number") setRemaining(data.remaining);
+        if (typeof data?.unlocked === "boolean") {
+          setUnlockKind(data.unlocked ? data.unlockKind ?? "day" : null);
+        }
         rollback(
           data?.message ?? "Something went quiet. Please try again.",
           data?.error ?? "upstream",
@@ -250,7 +373,12 @@ export function AskPanel({
             {error}
           </p>
         ) : null}
-        {atLimit && !streaming ? (
+        {fairUseReached && !streaming ? (
+          <p className="mb-2 px-1 text-sm leading-6 text-[#f7f1e4]" role="status">
+            {FAIR_USE_MESSAGE}
+          </p>
+        ) : null}
+        {freeLimitReached && !streaming && !nativeApp ? (
           <p className="mb-2 px-1 text-sm leading-6 text-[#f7f1e4]" role="status">
             {LIMIT_MESSAGE}
           </p>
@@ -290,7 +418,7 @@ export function AskPanel({
         <footer className="composer-footer mt-2 flex flex-col items-center gap-1 px-2 text-center">
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-white/75">
             <span className="drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)]">
-              {remainingLabel(remaining, limit)}
+              {remainingLabel(remaining, limit, unlockKind, fairUseReached)}
             </span>
             {hasConversation ? (
               <button
@@ -308,14 +436,42 @@ export function AskPanel({
             >
               About
             </Link>
-            <SupportLink
-              supportUrl={supportUrl}
-              supportNote={supportNote}
-              onSupportClick={onSupportClick}
-            />
+            {nativeApp ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPaywallReason(freeLimitReached ? "limit" : "support");
+                  setPaywallOpen(true);
+                }}
+                className="tracking-[0.14em] uppercase drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)] hover:text-white"
+              >
+                Support
+              </button>
+            ) : platform === "web" ? (
+              <SupportLink
+                supportUrl={supportUrl}
+                supportNote={supportNote}
+                onSupportClick={onSupportClick}
+              />
+            ) : (
+              <span className="tracking-[0.14em] uppercase opacity-0">Support</span>
+            )}
           </div>
         </footer>
       </div>
+      {nativeApp ? (
+        <Paywall
+          open={paywallOpen}
+          reason={paywallReason}
+          store={store}
+          unlimitedCap={unlimitedCap}
+          subscriptionActive={unlockKind === "subscription"}
+          onOpenChange={setPaywallOpen}
+          onUnlocked={() => {
+            void reloadQuota();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

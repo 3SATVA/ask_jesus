@@ -1,7 +1,7 @@
 import { AskPanel } from "@/components/ask-panel";
 import { JesusScene } from "@/components/jesus-scene";
 import { ViewportShell } from "@/components/viewport-shell";
-import { dailyLimit, supportUrl } from "@/lib/config";
+import { dailyLimit, supportUrl, unlimitedDailyCap } from "@/lib/config";
 
 export default function Home() {
   return (
@@ -11,7 +11,11 @@ export default function Home() {
         ASK JESUS
       </h1>
       <div className="chat-dock">
-        <AskPanel supportUrl={supportUrl()} initialLimit={dailyLimit()} />
+        <AskPanel
+          supportUrl={supportUrl()}
+          initialLimit={dailyLimit()}
+          unlimitedCap={unlimitedDailyCap()}
+        />
       </div>
     </ViewportShell>
   );
