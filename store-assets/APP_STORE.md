@@ -2,7 +2,7 @@
 
 The iOS app is a Capacitor shell. It loads the live site (by default `https://ask-jesus-lake.vercel.app`) and sells messages only through Apple In-App Purchase. The website keeps the free daily limit and the optional `NEXT_PUBLIC_SUPPORT_URL` link. That link is not shown in the iOS app. The website has no checkout and does not use Stripe. Android uses the same prices with shorter product IDs, listed in `store-assets/PLAY_STORE.md`.
 
-The App Store record for Ask AI Jesus already exists. The TestFlight workflow can run. The review steps at the bottom are still done in App Store Connect.
+The App Store record for Ask AI Jesus already exists. TestFlight purchases for both products already succeed. Privacy and terms are live. The screenshots for version 1.0 are in `store-assets/screenshots/`. The review steps at the bottom are still done in App Store Connect.
 
 ## Listing
 
@@ -12,18 +12,18 @@ The App Store record for Ask AI Jesus already exists. The TestFlight workflow ca
 | Home screen name | Ask Jesus |
 | Apple ID | `6823414587` |
 | Team ID | `9W7P7999LL` |
-| Subtitle | A quiet talk with Scripture |
+| Subtitle | A quiet talk with Scripture (27 characters) |
 | Bundle ID | `com.starseedsquad.askjesus` |
 | SKU | `ask-jesus-ai` |
 | Primary category | Lifestyle |
-| Secondary category | Reference |
+| Secondary category | Reference (not Books; this is a conversation, not a book) |
 | Privacy policy URL | `https://ask-jesus-lake.vercel.app/privacy` |
 | Terms URL | `https://ask-jesus-lake.vercel.app/terms` |
 | Support URL | `https://ask-jesus-lake.vercel.app/about` |
 | Marketing URL | `https://ask-jesus-lake.vercel.app` |
 | Copyright | 2026, using the legal name on the Apple Developer account |
 | Price | Free, with in-app purchases |
-| Age rating | 12+ (see the notes below) |
+| Age rating | Answer the questionnaire below. Expected result is 4+, not the Kids category. |
 
 ### Description
 
@@ -38,29 +38,56 @@ Terms of use: https://ask-jesus-lake.vercel.app/terms
 
 ### Keywords
 
-`jesus,bible,prayer,psalm,scripture,gospel,faith,christian,devotion,comfort`
+`bible,prayer,psalm,gospel,faith,devotion,comfort,hope,peace,christian`
+
+69 characters. No spaces. The words in the name (Ask, AI, Jesus) and the subtitle (quiet, talk, Scripture) are left out, because App Store Connect already indexes those.
 
 ### Promotional text
 
 Ten free messages a day. Unlimited today is $0.99. A month is $6.99.
 
+68 characters. The limit is 170. This can be changed later without a new build.
+
+### App Review notes
+
+Paste this into the version’s Review Notes:
+
+```
+Ask AI Jesus is an AI. It is not a person, not Jesus, and not scripture. No account is required.
+
+Ten messages each UTC day are free. In the iOS app, tap Support, or send 10 messages, to open the paywall. Unlimited today is a $0.99 consumable for the rest of that UTC day. Monthly is a $6.99 auto-renewable subscription, one month, renewing until canceled in Settings. Each includes a fair-use cap of 300 messages per UTC day. Payment stays inside Apple.
+
+Privacy: https://ask-jesus-lake.vercel.app/privacy
+Terms: https://ask-jesus-lake.vercel.app/terms
+
+Sandbox: sign in with the Sandbox Apple ID attached to this review. Buy either product from the paywall. A day pass changes the footer to UNLIMITED MESSAGES ACTIVATED. A subscription changes it to MONTHLY UNLIMITED ACTIVATED. Restore Purchases puts an active subscription back on the device.
+
+Hidden tester tools exist for the developer only. They are not needed for review. Please do not look for them.
+```
+
 ### Age rating notes
 
-Answer the questionnaire this way:
+Answer the current App Store Connect questionnaire this way. The form no longer uses a manual 12+ choice. These answers should calculate to 4+. Do not put the app in the Kids category. The privacy policy says it is not directed to children under 13.
 
-- Cartoon or fantasy violence, realistic violence, sexual content, nudity, profanity, horror, gambling, alcohol, tobacco, or drugs: None.
-- Mature or suggestive themes: None. The app does not include them.
-- Medical or treatment information: None. It refuses medical advice and tells a person in an emergency to call for help.
+- Cartoon or fantasy violence, realistic violence, guns or other weapons: None.
+- Sexual content, nudity, mature or suggestive themes: None.
+- Profanity or crude humor, horror or fear themes: None.
+- Alcohol, tobacco, or drugs: None.
+- Gambling, simulated gambling, contests, loot boxes: None.
+- Medical or treatment information: None. It refuses medical advice and tells a person in an emergency to call for help. Health or wellness topics: No.
 - Unrestricted web access: No. The shell opens this app’s own site. Links to crisis lines and the legal pages open in Safari.
-- Made for kids: No. Not directed to children under 13.
-- User-generated content: people type private messages. Those messages are not posted, shared, or shown to anyone else. There is no social feed.
-- Recommended rating: 12+.
+- User-generated content: No. Someone types a private message to the AI. It is not posted, shared, or shown to anyone else. There is no feed.
+- Social media: No. Nothing is redistributed or amplified to other people. There is no “disabled for users under 13” path, because there is no social feature.
+- Messaging and chat: No, if the question means chat with other people. The only reply is from the AI on this device.
+- Advertising: No.
+- Parental controls, age assurance: No.
+- Made for Kids: No.
 
 ### App Privacy answers
 
 - Data used to track you: none.
 - User content: the words someone types are sent to the server and then to OpenAI to write the reply. They are not stored on the server, and they are not linked to an identity.
-- Purchases: Apple processes payment. The server checks a signed transaction and stores the unlock only in a cookie on the device.
+- Purchases: Apple processes payment. The server checks a signed transaction and keeps the unlock on the device, as a signed token and a cookie. It is not an account.
 - Identifiers, contacts, location, and advertising data: not collected.
 
 ## Products
@@ -120,24 +147,50 @@ The workflow `.github/workflows/ios-testflight.yml` is manual (`workflow_dispatc
 
 The App Store icon is `store-assets/ask-jesus-ios-1024.png`, copied into the iOS asset catalog. It is the opaque 1024 portrait, without rounded corners.
 
+## Screenshots
+
+Captured from the live site at `https://ask-jesus-lake.vercel.app` in an iPhone-sized browser, with the iOS shell behavior (the Support paywall, and the day-pass footer). There is no status bar and no tester UI. The portrait already meets the top edge, so these are full-bleed and do not add a caption band.
+
+Upload the 6.9-inch set and the 6.5-inch set on the version page, in this order:
+
+| File | Size | What it shows |
+| --- | --- | --- |
+| `store-assets/screenshots/iphone-6.9-1320x2868-greeting.png` | 1320×2868 | Opening line: “My child, tell me what is on your mind?” |
+| `store-assets/screenshots/iphone-6.9-1320x2868-psalm.png` | 1320×2868 | A short conversation with Psalm 23:1 in gold italic |
+| `store-assets/screenshots/iphone-6.9-1320x2868-paywall.png` | 1320×2868 | Unlimited today $0.99 and Monthly $6.99/month |
+| `store-assets/screenshots/iphone-6.9-1320x2868-unlimited.png` | 1320×2868 | Footer: UNLIMITED MESSAGES ACTIVATED |
+| `store-assets/screenshots/iphone-6.5-1242x2688-greeting.png` | 1242×2688 | Same opening screen |
+| `store-assets/screenshots/iphone-6.5-1242x2688-psalm.png` | 1242×2688 | Same conversation |
+| `store-assets/screenshots/iphone-6.5-1242x2688-paywall.png` | 1242×2688 | Same paywall |
+| `store-assets/screenshots/iphone-6.5-1242x2688-unlimited.png` | 1242×2688 | Same unlocked footer |
+
+For the two in-app purchases, attach the paywall. Both products are on that one screen, so the two files are the same image:
+
+| File | Size | Attach to |
+| --- | --- | --- |
+| `store-assets/screenshots/iap-unlimited-today-1290x2796.png` | 1290×2796 | Consumable `com.starseedsquad.askjesus.unlimited.today` |
+| `store-assets/screenshots/iap-monthly-1290x2796.png` | 1290×2796 | Subscription `com.starseedsquad.askjesus.unlimited.monthly` |
+
+The paywall on the live site already shows the length, the price, the renewal line (“renews each month until you cancel”), and links to Privacy Policy and Terms of Use. `/privacy` and `/terms` both return 200.
+
 ## What you still do in App Store Connect
 
 1. Join the Apple Developer Program, if the account is not already enrolled.
 2. Open Agreements, Tax, and Banking and accept the Paid Applications agreement. Add the bank account and tax forms. In-app purchases do not work until this is active.
 3. Users and Access → Integrations → App Store Connect API. Generate an Admin key. Put its key ID, issuer ID, and `.p8` into the GitHub secrets `ASC_KEY_ID`, `ASC_ISSUER_ID`, and `ASC_PRIVATE_KEY`. Put the Team ID into `APPLE_TEAM_ID`.
-4. Set `UNLOCK_COOKIE_SECRET` on the server to a long random string. An In-App Purchase API key (`APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_PRIVATE_KEY`) is optional.
+4. `UNLOCK_COOKIE_SECRET` is already set on Vercel for production and preview. An In-App Purchase API key (`APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_PRIVATE_KEY`) is optional.
 5. Certificates, Identifiers & Profiles → Identifiers. Register an explicit App ID for `com.starseedsquad.askjesus`. In-App Purchase is on by default. Do not add Sign in with Apple.
 6. The App Store app already exists: name Ask AI Jesus, Apple ID `6823414587`, bundle ID `com.starseedsquad.askjesus`, SKU `ask-jesus-ai`. The home screen name is Ask Jesus.
-7. Set the server variable `APPLE_APP_APPLE_ID` to `6823414587`.
-8. Fill App Information with the category, the 12+ age rating from the notes above, and the privacy policy URL `https://ask-jesus-lake.vercel.app/privacy`.
+7. `APPLE_APP_APPLE_ID` is already `6823414587` on Vercel for production and preview.
+8. Fill App Information with Lifestyle, secondary Reference, the age-rating answers above, and the privacy policy URL `https://ask-jesus-lake.vercel.app/privacy`.
 9. App Privacy: answer from the section above.
-10. In-App Purchases: create the subscription group `Ask Jesus Unlimited`, then the monthly subscription at $6.99 and the Unlimited today consumable at $0.99, using the product IDs in the table. Add the English display names and descriptions. Turn Family Sharing off. Add a review screenshot of the paywall for each product.
+10. In-App Purchases: create the subscription group `Ask Jesus Unlimited`, then the monthly subscription at $6.99 and the Unlimited today consumable at $0.99, using the product IDs in the table. Add the English display names and descriptions. Turn Family Sharing off. Attach `iap-unlimited-today-1290x2796.png` to the consumable and `iap-monthly-1290x2796.png` to the subscription.
 11. Pricing: base country United States, prices in the table.
-12. Prepare the version 1.0 page: paste the description, subtitle, keywords, support URL, and marketing URL from this file. Upload iPhone screenshots (6.7-inch is required). Choose the build after TestFlight finishes processing.
-13. Deploy this website first, so the shell loads the paywall and the privacy and terms pages.
+12. Prepare the version 1.0 page: paste the description, subtitle, promotional text, keywords, support URL, and marketing URL from this file. Upload the 6.9-inch and 6.5-inch screenshots from `store-assets/screenshots/`, in the order listed there. Choose the build after TestFlight finishes processing.
+13. The website is already live, including the paywall and `/privacy` and `/terms`. No new TestFlight build is required for these screenshots.
 14. On GitHub, open Actions → iOS TestFlight → Run workflow. Do this only after steps 3 and 6. The workflow archives with automatic signing and uploads to TestFlight. It does not submit for review.
 15. In TestFlight, wait for processing, answer export compliance if asked (the app only uses exempt HTTPS encryption), and add an internal tester. Create a Sandbox Apple ID under Users and Access → Sandbox to buy Unlimited today and the monthly subscription.
-16. In the version’s Review Notes, tell the reviewer: no account is required; tap Support, or send 10 messages, to open the paywall; Unlimited today is a $0.99 consumable for the rest of that UTC day; the subscription is $6.99 a month; both include a fair-use cap of 300 messages per UTC day; purchases stay inside Apple; a Sandbox account is attached.
+16. Paste the App Review notes from this file. Sandbox purchases of both products already succeeded in TestFlight.
 17. Select the build and submit for review when the sandbox purchases succeed.
 
 The shell is a WebView of this site plus StoreKit. Apple sometimes rejects a thin website wrapper. The native piece they are reviewing is the purchase flow. If review asks for more native behavior, that is a follow-up, not something this workflow can invent.
