@@ -42,7 +42,7 @@ Without that key, the page still loads. Asking a question returns a clear messag
 | `APPLE_IAP_ISSUER_ID` | For iOS purchases | Issuer ID for that key. |
 | `APPLE_IAP_PRIVATE_KEY` | For iOS purchases | The `.p8` contents. Newlines may be written as `\n`. |
 | `APPLE_BUNDLE_ID` | No | Defaults to `com.starseedsquad.askjesus`. |
-| `APPLE_APP_APPLE_ID` | For production purchases | The app’s numeric Apple ID. Sandbox and TestFlight receipts can be checked without it. |
+| `APPLE_APP_APPLE_ID` | For production purchases | Numeric Apple ID of the App Store app Ask AI Jesus (`6823414587`). Sandbox and TestFlight receipts can be checked without it. |
 | `APPLE_IAP_ONLINE_CHECKS` | No | Set to `true` to also check Apple’s certificate revocation. Confirmation with the App Store Server API happens either way. |
 | `UNLOCK_COOKIE_SECRET` | For app purchases | Signs the cookie that remembers a verified day pass or subscription. |
 | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | For Android purchases | Service account JSON for the Google Play Developer API. Raw JSON or base64. The same JSON can be the GitHub secret used to upload an Android App Bundle. |
