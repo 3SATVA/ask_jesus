@@ -88,6 +88,19 @@ describe("entitlementForTransaction", () => {
     const subscription = entitlementForTransaction(monthly(), NOW);
     assert.ok(day && subscription);
     assert.equal(pickEntitlement([day, subscription])?.kind, "subscription");
+    assert.equal(pickEntitlement([subscription, day])?.until.toISOString(), subscription.until.toISOString());
+  });
+
+  it("shows the monthly entitlement when a shorter subscription overlaps a day pass", () => {
+    const day = entitlementForTransaction(dayPass(), NOW);
+    const subscription = entitlementForTransaction(
+      monthly({ expiresDateMs: new Date("2026-10-16T20:00:00.000Z").getTime() }),
+      NOW,
+    );
+    assert.ok(day && subscription);
+    const picked = pickEntitlement([day, subscription]);
+    assert.equal(picked?.kind, "subscription");
+    assert.equal(picked?.until.toISOString(), day.until.toISOString());
   });
 
   it("drops an expired subscription even if a grace date is missing, and honors a grace end", () => {

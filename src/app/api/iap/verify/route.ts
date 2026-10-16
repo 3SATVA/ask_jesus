@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { confirmSignedTransactions, readAppleVerifyOptions } from "@/lib/apple-iap";
 import { confirmGooglePurchases, readGooglePlayConfig } from "@/lib/google-play";
-import type { GrantedEntitlement } from "@/lib/entitlement";
+import { pickEntitlement, type GrantedEntitlement } from "@/lib/entitlement";
 import { isKnownProduct } from "@/lib/products";
 import {
   presentedUnlock,
@@ -24,6 +24,25 @@ function notReady() {
     { error: "not_configured", message: NOT_READY },
     { status: 503, headers: { "Cache-Control": "no-store" } },
   );
+}
+
+function rememberedGrant(request: NextRequest, secret: string, now: Date): GrantedEntitlement | null {
+  const existing = readUnlock(presentedUnlock(request), secret, now);
+  if (!existing) return null;
+  return {
+    kind: existing.kind,
+    until: new Date(existing.until),
+    transactionId: existing.transactionId,
+    productId: existing.productId,
+  };
+}
+
+/** A new purchase keeps a still-active subscription ahead of a day pass. */
+function grantToSeal(request: NextRequest, secret: string, grant: GrantedEntitlement, replace: boolean, now: Date) {
+  if (replace) return grant;
+  const remembered = rememberedGrant(request, secret, now);
+  if (!remembered) return grant;
+  return pickEntitlement([grant, remembered]) ?? grant;
 }
 
 function grantResponse(entitlement: GrantedEntitlement, secret: string, now: Date) {
@@ -135,7 +154,7 @@ export async function POST(request: NextRequest) {
     if (!config) return notReady();
     const result = await confirmGooglePurchases(googlePurchases, config, now);
     if (!result.ok) return notConfirmed(request, secret, replace, now);
-    return grantResponse(result.entitlement, secret, now);
+    return grantResponse(grantToSeal(request, secret, result.entitlement, replace, now), secret, now);
   }
 
   const options = readAppleVerifyOptions();
@@ -146,5 +165,5 @@ export async function POST(request: NextRequest) {
   }
   const result = await confirmSignedTransactions(signedTransactions, options, now);
   if (!result.ok) return notConfirmed(request, secret, replace, now);
-  return grantResponse(result.entitlement, secret, now);
+  return grantResponse(grantToSeal(request, secret, result.entitlement, replace, now), secret, now);
 }

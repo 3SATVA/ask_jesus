@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Paywall } from "@/components/paywall";
 import { ReplyText } from "@/components/reply-text";
 import { FAIR_USE_MESSAGE, LIMIT_MESSAGE } from "@/lib/messages";
-import { UNLOCK_CONFIRMATION, remainingLabel } from "@/lib/quota-label";
+import { remainingLabel, shownUnlockKind, unlockConfirmation } from "@/lib/quota-label";
 import {
   listenForUnfinishedTransactions,
   nativeStore,
@@ -473,8 +473,9 @@ export function AskPanel({
           subscriptionActive={unlockKind === "subscription"}
           onOpenChange={setPaywallOpen}
           onUnlocked={(kind) => {
-            if (kind) setUnlockKind(kind);
-            setNotice(UNLOCK_CONFIRMATION);
+            const shown = shownUnlockKind([unlockKind, kind]);
+            if (shown) setUnlockKind(shown);
+            setNotice(unlockConfirmation(shown));
             if (noticeTimer.current) clearTimeout(noticeTimer.current);
             noticeTimer.current = setTimeout(() => setNotice(""), 4500);
             void reloadQuota();

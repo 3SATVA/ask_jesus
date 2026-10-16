@@ -131,9 +131,25 @@ export function entitlementAfterStatus(
   return entitlementForTransaction(next, now, bundleId);
 }
 
+function latestGrant(grants: GrantedEntitlement[]) {
+  return grants.reduce((best, grant) => (grant.until.getTime() > best.until.getTime() ? grant : best));
+}
+
+/**
+ * Keep the grant that should be shown and enforced.
+ * A monthly subscription wins over a day pass when both are active. Access
+ * still lasts until whichever of them ends later.
+ */
 export function pickEntitlement(grants: GrantedEntitlement[]) {
-  return grants.reduce<GrantedEntitlement | null>((best, grant) => {
-    if (!best || grant.until.getTime() > best.until.getTime()) return grant;
-    return best;
-  }, null);
+  const subscriptions = grants.filter((grant) => grant.kind === "subscription");
+  const days = grants.filter((grant) => grant.kind === "day");
+  if (subscriptions.length > 0) {
+    const subscription = latestGrant(subscriptions);
+    if (days.length === 0) return subscription;
+    const day = latestGrant(days);
+    if (day.until.getTime() <= subscription.until.getTime()) return subscription;
+    return { ...subscription, until: day.until };
+  }
+  if (days.length === 0) return null;
+  return latestGrant(days);
 }
