@@ -12,7 +12,7 @@ import {
 
 export const maxDuration = 30;
 
-const NOT_CONFIRMED = "That gift could not be confirmed. You can try again.";
+const NOT_CONFIRMED = "That purchase could not be confirmed. You can try again.";
 const NOT_READY = "Purchases are not available just yet.";
 
 export async function POST(request: NextRequest) {

@@ -12,7 +12,7 @@ describe("unlock cookie", () => {
         kind: "day",
         until: "2026-10-16T23:59:59.999Z",
         transactionId: "tip-1",
-        productId: "com.starseedsquad.askjesus.tip.299",
+        productId: "com.starseedsquad.askjesus.unlimited.today",
       },
       secret,
     );

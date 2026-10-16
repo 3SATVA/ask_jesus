@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MONTHLY_PRODUCT, TIP_PRODUCTS } from "@/lib/products";
+import { DAY_PASS, MONTHLY_PRODUCT } from "@/lib/products";
 import {
   loadStorePrices,
   manageSubscriptions,
@@ -56,25 +56,18 @@ export function Paywall({
       onOpenChange(false);
     } catch (error) {
       if (!purchaseWasCancelled(error)) {
-        setNote(error instanceof Error ? error.message : "That gift could not be confirmed.");
+        setNote(error instanceof Error ? error.message : "That purchase could not be confirmed.");
       }
     } finally {
       setBusyId(null);
     }
   }
 
-  const offerings = [
-    ...TIP_PRODUCTS.map((product) => ({
-      id: product.id,
-      label: `${product.title} · ${prices[product.id] ?? product.fallbackPrice}`,
-      detail: product.detail,
-    })),
-    {
-      id: MONTHLY_PRODUCT.id,
-      label: `${MONTHLY_PRODUCT.title} · ${prices[MONTHLY_PRODUCT.id] ?? MONTHLY_PRODUCT.fallbackPrice}`,
-      detail: MONTHLY_PRODUCT.detail,
-    },
-  ];
+  const offerings = [DAY_PASS, MONTHLY_PRODUCT].map((product) => ({
+    id: product.id,
+    label: `${product.title} · ${prices[product.id] ?? product.fallbackPrice}`,
+    detail: product.detail,
+  }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,8 +78,8 @@ export function Paywall({
           </DialogTitle>
           <DialogDescription className="text-base leading-7 text-[#f6efe2]">
             {reason === "limit"
-              ? "Today's free messages are used. A gift opens the rest of this day. A monthly gift keeps every day open."
-              : "A few messages each day are free. If you want more time together, a gift keeps the conversation open."}
+              ? "Today's free messages are used. Unlimited today opens the rest of this day. A month keeps every day open."
+              : "A few messages each day are free. Unlimited today opens the rest of this day. A month keeps every day open."}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2">
@@ -131,9 +124,9 @@ export function Paywall({
           </p>
         ) : null}
         <p className="text-xs leading-5 text-[#cbbfa8]">
-          Apple charges your Apple ID. The monthly gift renews each month until you cancel it in
-          Settings, at least a day before the period ends. A gift for today is used once, and it
-          lasts until midnight UTC.{" "}
+          Apple charges your Apple ID. Unlimited today is used once and lasts until midnight UTC.
+          The monthly subscription renews each month until you cancel it in Settings, at least a
+          day before the period ends.{" "}
           <Link href="/privacy" className="text-[#f0d48a] underline underline-offset-4">
             Privacy Policy
           </Link>

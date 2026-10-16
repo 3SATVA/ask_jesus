@@ -11,13 +11,13 @@ import {
   storeTransactionFromDecoded,
   type StoreTransaction,
 } from "./entitlement";
-import { IOS_BUNDLE_ID, MONTHLY_PRODUCT, TIP_PRODUCTS } from "./products";
+import { DAY_PASS, IOS_BUNDLE_ID, MONTHLY_PRODUCT } from "./products";
 
 const NOW = new Date("2026-10-16T18:00:00.000Z");
 
-function tip(overrides: Partial<StoreTransaction> = {}): StoreTransaction {
+function dayPass(overrides: Partial<StoreTransaction> = {}): StoreTransaction {
   return {
-    productId: TIP_PRODUCTS[0].id,
+    productId: DAY_PASS.id,
     transactionId: "tip-1",
     bundleId: IOS_BUNDLE_ID,
     purchaseDateMs: new Date("2026-10-16T15:00:00.000Z").getTime(),
@@ -42,28 +42,27 @@ function monthly(overrides: Partial<StoreTransaction> = {}): StoreTransaction {
 }
 
 describe("entitlementForTransaction", () => {
-  it("unlocks the rest of the UTC day for each tip amount", () => {
-    for (const product of TIP_PRODUCTS) {
-      const grant = entitlementForTransaction(tip({ productId: product.id }), NOW);
-      assert.equal(grant?.kind, "day");
-      assert.equal(grant?.until.toISOString(), "2026-10-16T23:59:59.999Z");
-    }
+  it("unlocks the rest of the UTC day for Unlimited today", () => {
+    const grant = entitlementForTransaction(dayPass(), NOW);
+    assert.equal(grant?.kind, "day");
+    assert.equal(grant?.productId, DAY_PASS.id);
+    assert.equal(grant?.until.toISOString(), "2026-10-16T23:59:59.999Z");
     assert.equal(endOfUtcDay(NOW).toISOString(), "2026-10-16T23:59:59.999Z");
   });
 
-  it("does not honor a tip from a previous UTC day", () => {
+  it("does not honor a day pass from a previous UTC day", () => {
     const grant = entitlementForTransaction(
-      tip({ purchaseDateMs: new Date("2026-10-15T23:30:00.000Z").getTime() }),
+      dayPass({ purchaseDateMs: new Date("2026-10-15T23:30:00.000Z").getTime() }),
       NOW,
     );
     assert.equal(grant, null);
   });
 
-  it("rejects a refunded tip, the wrong app, and the wrong product type", () => {
-    assert.equal(entitlementForTransaction(tip({ revocationDateMs: NOW.getTime() }), NOW), null);
-    assert.equal(entitlementForTransaction(tip({ bundleId: "com.example.other" }), NOW), null);
-    assert.equal(entitlementForTransaction(tip({ type: APPLE_SUBSCRIPTION }), NOW), null);
-    assert.equal(entitlementForTransaction(tip({ productId: "com.example.unknown" }), NOW), null);
+  it("rejects a refunded day pass, the wrong app, and the wrong product type", () => {
+    assert.equal(entitlementForTransaction(dayPass({ revocationDateMs: NOW.getTime() }), NOW), null);
+    assert.equal(entitlementForTransaction(dayPass({ bundleId: "com.example.other" }), NOW), null);
+    assert.equal(entitlementForTransaction(dayPass({ type: APPLE_SUBSCRIPTION }), NOW), null);
+    assert.equal(entitlementForTransaction(dayPass({ productId: "com.example.unknown" }), NOW), null);
   });
 
   it("unlocks a monthly subscription until Apple's expiry", () => {
@@ -85,7 +84,7 @@ describe("entitlementForTransaction", () => {
   });
 
   it("keeps the entitlement that lasts longer", () => {
-    const day = entitlementForTransaction(tip(), NOW);
+    const day = entitlementForTransaction(dayPass(), NOW);
     const subscription = entitlementForTransaction(monthly(), NOW);
     assert.ok(day && subscription);
     assert.equal(pickEntitlement([day, subscription])?.kind, "subscription");
@@ -112,13 +111,13 @@ describe("entitlementForTransaction", () => {
 
   it("maps a decoded App Store payload", () => {
     const mapped = storeTransactionFromDecoded({
-      productId: TIP_PRODUCTS[1].id,
+      productId: DAY_PASS.id,
       transactionId: "2000001",
       bundleId: IOS_BUNDLE_ID,
       purchaseDate: NOW.getTime(),
       type: APPLE_CONSUMABLE,
     });
-    assert.equal(mapped?.productId, TIP_PRODUCTS[1].id);
+    assert.equal(mapped?.productId, DAY_PASS.id);
     assert.equal(storeTransactionFromDecoded({ productId: "x" }), null);
   });
 });

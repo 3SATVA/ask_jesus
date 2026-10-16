@@ -53,7 +53,7 @@ Changing `NEXT_PUBLIC_*` values requires a new build.
 `POST /api/ask` checks the question, then:
 
 1. If it sounds like someone is in danger, it streams a short compassionate reply with real help (988, the National Domestic Violence Hotline, Childhelp, or 911). That reply does not count against the daily limit.
-2. If the daily limit is used up, it returns a friendly note and the support link. A verified iOS purchase skips that limit: a consumable gift lasts until the end of that UTC day, and the monthly subscription lasts until Apple says it expires. The website never offers those purchases.
+2. If the daily limit is used up, it returns a friendly note and the support link. A verified iOS purchase skips that limit: Unlimited today lasts until the end of that UTC day, and the monthly subscription lasts until Apple says it expires. The website never offers those purchases.
 3. If `OPENAI_API_KEY` is not configured, it returns a clear error.
 4. Otherwise it streams a reply with `streamText` from the AI SDK and the OpenAI provider. The recent conversation is sent with the new question, so the reply can remember what was already said. Only the new question counts against the daily limit. The browser keeps the current conversation in `localStorage`. GPT-6 models, including the default, do not accept a temperature setting, so the request does not send one.
 

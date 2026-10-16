@@ -3,14 +3,14 @@ import { LegalPage } from "@/components/legal-page";
 
 export const metadata: Metadata = {
   title: "Terms — ASK JESUS",
-  description: "Terms for Ask Jesus AI, including the free daily messages and the iOS gifts and subscription.",
+  description: "Terms for Ask Jesus AI, including the free daily messages and the iOS day pass and subscription.",
 };
 
 export default function TermsPage() {
   return (
     <LegalPage
       title="Terms"
-      lede="Ask Jesus AI is a conversation shaped by the Gospels and the Hebrew scriptures. These terms say what it is, and what a gift on iOS buys."
+      lede="Ask Jesus AI is a conversation shaped by the Gospels and the Hebrew scriptures. These terms say what it is, and what an iOS purchase buys."
     >
       <p>
         The voice is an AI. It is not Jesus, not scripture, and not a pastor, doctor, lawyer, or
@@ -22,22 +22,22 @@ export default function TermsPage() {
         day starts at midnight UTC. Crisis replies do not use one of those messages.
       </p>
       <p>
-        The iOS app can offer three gifts and one subscription through Apple In-App Purchase.
-        There is no other way to pay inside the iOS app.
+        The iOS app can offer Unlimited today and one monthly subscription through Apple In-App
+        Purchase. There is no other way to pay inside the iOS app.
       </p>
       <ul className="list-disc space-y-2 pl-5">
-        <li>A small gift, a gift, and a generous gift are consumable. Each one unlocks unlimited messages until midnight UTC on the day it is bought.</li>
-        <li>Unlimited is an auto-renewable subscription. It unlocks unlimited messages until the paid period ends.</li>
+        <li>Unlimited today is a consumable. It unlocks unlimited messages until midnight UTC on the day it is bought.</li>
+        <li>Monthly is an auto-renewable subscription. It unlocks unlimited messages until the paid period ends.</li>
       </ul>
       <p>
         Payment is charged to your Apple ID at confirmation. The subscription renews each month
         unless you cancel it in your Apple ID settings at least 24 hours before the current
         period ends. Apple renews the charge within 24 hours before the period ends. You can
-        manage or cancel the subscription in Settings. A consumable gift is used when you buy it
+        manage or cancel the subscription in Settings. Unlimited today is used when you buy it
         and is not a subscription. Refunds are handled by Apple.
       </p>
       <p>
-        Restoring purchases puts an active subscription back on this device. A gift for today
+        Restoring purchases puts an active subscription back on this device. Unlimited today
         stays on the device that confirmed it, until that UTC day ends.
       </p>
       <p>

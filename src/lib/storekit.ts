@@ -1,6 +1,6 @@
 "use client";
 
-import { MONTHLY_PRODUCT, PRODUCT_IDS, TIP_PRODUCTS, isMonthlyProduct } from "@/lib/products";
+import { DAY_PASS, MONTHLY_PRODUCT, PRODUCT_IDS, isMonthlyProduct } from "@/lib/products";
 
 export type UnlockKind = "day" | "subscription";
 
@@ -29,7 +29,7 @@ export async function postSignedTransactions(signedTransactions: string[], repla
   });
   const data = (await response.json().catch(() => null)) as { message?: string; unlocked?: boolean } | null;
   if (!response.ok) {
-    throw new Error(data?.message || "That gift could not be confirmed.");
+    throw new Error(data?.message || "That purchase could not be confirmed.");
   }
   return data;
 }
@@ -38,15 +38,15 @@ export async function loadStorePrices() {
   const prices: Record<string, string> = {};
   try {
     const { NativePurchases, PURCHASE_TYPE } = await nativePurchases();
-    const tips = await NativePurchases.getProducts({
-      productIdentifiers: TIP_PRODUCTS.map((product) => product.id),
+    const dayPass = await NativePurchases.getProducts({
+      productIdentifiers: [DAY_PASS.id],
       productType: PURCHASE_TYPE.INAPP,
     });
     const monthly = await NativePurchases.getProducts({
       productIdentifiers: [MONTHLY_PRODUCT.id],
       productType: PURCHASE_TYPE.SUBS,
     });
-    for (const product of [...tips.products, ...monthly.products]) {
+    for (const product of [...dayPass.products, ...monthly.products]) {
       if (product.identifier && product.priceString) prices[product.identifier] = product.priceString;
     }
   } catch {
@@ -62,7 +62,7 @@ async function finishTransaction(transactionId: string) {
 
 export async function purchaseProduct(productId: string) {
   if (!PRODUCT_IDS.includes(productId as (typeof PRODUCT_IDS)[number])) {
-    throw new Error("That gift is not available.");
+    throw new Error("That purchase is not available.");
   }
   const { NativePurchases, PURCHASE_TYPE } = await nativePurchases();
   const billing = await NativePurchases.isBillingSupported();
@@ -97,7 +97,7 @@ export async function restorePurchases() {
   if (signed.length === 0) {
     const data = await postSignedTransactions([], true);
     if (data?.unlocked) return;
-    throw new Error("Nothing active to restore. A gift for today lasts until the day ends.");
+    throw new Error("Nothing active to restore. Unlimited today lasts until the day ends.");
   }
   await postSignedTransactions(signed, true);
 }

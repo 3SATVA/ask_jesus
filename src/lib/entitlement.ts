@@ -1,4 +1,4 @@
-import { IOS_BUNDLE_ID, isMonthlyProduct, isTipProduct } from "./products";
+import { IOS_BUNDLE_ID, isDayPass, isMonthlyProduct } from "./products";
 
 /** Apple's transaction type string for a consumable. */
 export const APPLE_CONSUMABLE = "Consumable";
@@ -76,7 +76,7 @@ export function entitlementForTransaction(
   if (!transaction.transactionId) return null;
   if (transaction.revocationDateMs != null) return null;
 
-  if (isTipProduct(transaction.productId)) {
+  if (isDayPass(transaction.productId)) {
     if (transaction.type !== APPLE_CONSUMABLE) return null;
     const until = endOfUtcDay(new Date(transaction.purchaseDateMs));
     if (now.getTime() > until.getTime()) return null;

@@ -28,12 +28,12 @@ export default function PrivacyPage() {
         used today. The free allowance is 10 messages per UTC day. The cookie is not an account.
       </p>
       <p>
-        On the iOS app, gifts and the monthly subscription are processed by Apple. This app does
-        not receive your card number. After Apple returns a signed transaction, the server checks
-        it with Apple and, if it is valid, sets a cookie named ask_jesus_unlock. That cookie says
-        how long unlimited messages last: until the end of the UTC day for a gift, or until the
-        subscription period ends. The website does not sell those gifts. If a giving page is
-        configured, it is only shown on the website.
+        On the iOS app, Unlimited today and the monthly subscription are processed by Apple. This
+        app does not receive your card number. After Apple returns a signed transaction, the
+        server checks it with Apple and, if it is valid, sets a cookie named ask_jesus_unlock.
+        That cookie says how long unlimited messages last: until the end of the UTC day for
+        Unlimited today, or until the subscription period ends. The website does not sell these.
+        If a giving page is configured, it is only shown on the website.
       </p>
       <p>
         The app does not use advertising identifiers, and it does not sell personal information.
