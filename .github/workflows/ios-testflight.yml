@@ -1,5 +1,5 @@
-# Manual TestFlight upload for Ask Jesus AI.
-# Do not run this until the App Store Connect steps in store-assets/APP_STORE.md are done.
+# Manual TestFlight upload for Ask AI Jesus.
+# The App Store record already exists. Review steps are in store-assets/APP_STORE.md.
 name: iOS TestFlight
 
 on:
@@ -91,20 +91,25 @@ jobs:
           </dict>
           </plist>
           EOF
+          # Auth flags belong before the action. The shared scheme is App.
+          # Automatic signing picks the distribution identity at export time.
+          XCODE_SIGN=(
+            -authenticationKeyPath "$KEY_PATH"
+            -authenticationKeyID "$ASC_KEY_ID"
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            -allowProvisioningUpdates
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+            CODE_SIGN_STYLE=Automatic
+            IPHONEOS_DEPLOYMENT_TARGET=15.0
+          )
           if [ -d ios/App/App.xcworkspace ]; then
-            xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
-              -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
-              -allowProvisioningUpdates DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
-              IPHONEOS_DEPLOYMENT_TARGET=15.0 archive \
-              -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" \
-              -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            xcodebuild "${XCODE_SIGN[@]}" -workspace ios/App/App.xcworkspace -scheme App \
+              -configuration Release -destination 'generic/platform=iOS' \
+              -archivePath "$RUNNER_TEMP/App.xcarchive" archive
           else
-            xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
-              -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
-              -allowProvisioningUpdates DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
-              IPHONEOS_DEPLOYMENT_TARGET=15.0 archive \
-              -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" \
-              -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            xcodebuild "${XCODE_SIGN[@]}" -project ios/App/App.xcodeproj -scheme App \
+              -configuration Release -destination 'generic/platform=iOS' \
+              -archivePath "$RUNNER_TEMP/App.xcarchive" archive
           fi
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportPath "$RUNNER_TEMP/ios-export" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \

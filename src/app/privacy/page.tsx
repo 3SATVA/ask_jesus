@@ -5,7 +5,7 @@ import { unlimitedDailyCap } from "@/lib/config";
 export const metadata: Metadata = {
   title: "Privacy — ASK JESUS",
   description:
-    "How Ask Jesus AI handles the words you type, the daily limit, and App Store and Google Play purchases.",
+    "How Ask AI Jesus handles the words you type, the daily limit, and App Store and Google Play purchases.",
 };
 
 export default function PrivacyPage() {
@@ -13,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy"
-      lede="Ask Jesus AI does not ask you to make an account. This page says what leaves your device, and what stays."
+      lede="Ask AI Jesus does not ask you to make an account. This page says what leaves your device, and what stays."
     >
       <p>
         The words you type are sent to this app’s server so a reply can be written. The server
@@ -47,8 +47,8 @@ export default function PrivacyPage() {
         It is not directed to children under 13.
       </p>
         <p>
-          Questions about privacy can be sent through the contact on the App Store or Google Play
-          listing for Ask Jesus AI.
+          Questions about privacy can be sent through the contact on the App Store listing for
+          Ask AI Jesus, or on the Google Play listing.
         </p>
     </LegalPage>
   );

@@ -1,14 +1,17 @@
-# Ask Jesus AI — App Store
+# Ask AI Jesus — App Store
 
 The iOS app is a Capacitor shell. It loads the live site (by default `https://ask-jesus-lake.vercel.app`) and sells messages only through Apple In-App Purchase. The website keeps the free daily limit and the optional `NEXT_PUBLIC_SUPPORT_URL` link. That link is not shown in the iOS app. The website has no checkout and does not use Stripe. Android uses the same prices with shorter product IDs, listed in `store-assets/PLAY_STORE.md`.
 
-Do not run the TestFlight workflow until the steps at the bottom are done.
+The App Store record for Ask AI Jesus already exists. The TestFlight workflow can run. The review steps at the bottom are still done in App Store Connect.
 
 ## Listing
 
 | Field | Value |
 | --- | --- |
-| Name | Ask Jesus AI |
+| Name | Ask AI Jesus |
+| Home screen name | Ask Jesus |
+| Apple ID | `6823414587` |
+| Team ID | `9W7P7999LL` |
 | Subtitle | A quiet talk with Scripture |
 | Bundle ID | `com.starseedsquad.askjesus` |
 | SKU | `ask-jesus-ai` |
@@ -24,7 +27,7 @@ Do not run the TestFlight workflow until the steps at the bottom are done.
 
 ### Description
 
-Ask Jesus AI is a quiet place to talk. You write what is on your mind. The reply is short, in the first person, shaped by the four Gospels. When it quotes scripture, it quotes the Hebrew scriptures, especially the Psalms.
+Ask AI Jesus is a quiet place to talk. You write what is on your mind. The reply is short, in the first person, shaped by the four Gospels. When it quotes scripture, it quotes the Hebrew scriptures, especially the Psalms.
 
 Ten messages a day are free. On this iOS app, Unlimited today opens the rest of the day for $0.99, and a monthly subscription keeps every day open for $6.99. Those are purchased from Apple, inside the app. A day pass or subscription includes 300 messages each UTC day.
 
@@ -75,7 +78,7 @@ Display name for the consumable: `Unlimited today`
 Consumable description: `Messages until midnight UTC on the day you buy it, up to 300 that day.`
 
 Subscription display name: `Monthly`
-Subscription description: `Messages with Ask Jesus AI until you cancel, up to 300 each day.`
+Subscription description: `Messages with Ask AI Jesus until you cancel, up to 300 each day.`
 
 Family Sharing should be off.
 
@@ -91,7 +94,7 @@ Set these on the host that serves the website (Vercel), not in the iOS binary. T
 | `APPLE_IAP_ISSUER_ID` | Issuer ID for that key. It is often the same issuer as the TestFlight key when both keys are on the same team. Set it here anyway. |
 | `APPLE_IAP_PRIVATE_KEY` | Contents of that key’s `.p8` file, including the BEGIN and END lines. Escaped newlines (`\n`) are accepted. |
 | `APPLE_BUNDLE_ID` | Optional. Defaults to `com.starseedsquad.askjesus`. |
-| `APPLE_APP_APPLE_ID` | The app’s numeric Apple ID, from App Information. Required to confirm production transactions. TestFlight uses the sandbox, which does not need it. |
+| `APPLE_APP_APPLE_ID` | `6823414587`, the numeric Apple ID of Ask AI Jesus. Required to confirm production transactions. TestFlight uses the sandbox, which does not need it. |
 | `APPLE_IAP_ONLINE_CHECKS` | Optional. `true` also checks certificate revocation. The server always confirms the transaction with the App Store Server API. |
 | `UNLOCK_COOKIE_SECRET` | A long random string. It signs the cookie that remembers a verified unlock. |
 | `UNLIMITED_DAILY_CAP` | Optional. Fair-use cap for a day pass or subscription, per UTC day. Defaults to `300`. |
@@ -101,14 +104,14 @@ The server verifies the StoreKit 2 signed transaction (JWS), then calls the App 
 
 ## GitHub secrets
 
-The workflow `.github/workflows/ios-testflight.yml` is manual (`workflow_dispatch` only). It was not run. Add these repository secrets, then run it by hand.
+The workflow `.github/workflows/ios-testflight.yml` is manual (`workflow_dispatch` only). Run it from the `main` branch after the secrets below are set.
 
 | Secret | Required | What to paste |
 | --- | --- | --- |
 | `ASC_KEY_ID` | Yes | Key ID of an App Store Connect API key with the Admin role. |
 | `ASC_ISSUER_ID` | Yes | Issuer ID shown above the keys list. |
 | `ASC_PRIVATE_KEY` | Yes | The full `.p8` file for that key, or the same file encoded as base64. |
-| `APPLE_TEAM_ID` | Yes | The 10-character Team ID. Automatic signing cannot create a profile without it. |
+| `APPLE_TEAM_ID` | Yes | Team ID `9W7P7999LL`. Automatic signing cannot create a profile without it. |
 | `CAPACITOR_SERVER_URL` | No | Site the shell should load. When empty, the app loads `https://ask-jesus-lake.vercel.app`. |
 
 `ASC_PRIVATE_KEY` is for building and uploading. `APPLE_IAP_PRIVATE_KEY` is for verifying purchases on the server. Create both keys. They are not interchangeable in this project, even if you choose to use one App Store Connect key for both jobs.
@@ -124,8 +127,8 @@ The App Store icon is `store-assets/ask-jesus-ios-1024.png`, copied into the iOS
 3. Users and Access → Integrations → App Store Connect API. Generate an Admin key. Put its key ID, issuer ID, and `.p8` into the GitHub secrets `ASC_KEY_ID`, `ASC_ISSUER_ID`, and `ASC_PRIVATE_KEY`. Put the Team ID into `APPLE_TEAM_ID`.
 4. Users and Access → Integrations → In-App Purchase. Generate a separate key. Put it in the server variables `APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, and `APPLE_IAP_PRIVATE_KEY`. Also set `UNLOCK_COOKIE_SECRET` on the server.
 5. Certificates, Identifiers & Profiles → Identifiers. Register an explicit App ID for `com.starseedsquad.askjesus`. In-App Purchase is on by default. Do not add Sign in with Apple.
-6. My Apps → New App. Platform iOS, name Ask Jesus AI, language English, bundle ID `com.starseedsquad.askjesus`, SKU `ask-jesus-ai`.
-7. Copy the numeric Apple ID from App Information into the server variable `APPLE_APP_APPLE_ID`.
+6. The App Store app already exists: name Ask AI Jesus, Apple ID `6823414587`, bundle ID `com.starseedsquad.askjesus`, SKU `ask-jesus-ai`. The home screen name is Ask Jesus.
+7. Set the server variable `APPLE_APP_APPLE_ID` to `6823414587`.
 8. Fill App Information with the category, the 12+ age rating from the notes above, and the privacy policy URL `https://ask-jesus-lake.vercel.app/privacy`.
 9. App Privacy: answer from the section above.
 10. In-App Purchases: create the subscription group `Ask Jesus Unlimited`, then the monthly subscription at $6.99 and the Unlimited today consumable at $0.99, using the product IDs in the table. Add the English display names and descriptions. Turn Family Sharing off. Add a review screenshot of the paywall for each product.

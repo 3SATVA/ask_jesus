@@ -13,7 +13,7 @@ function hostOf(url: string) {
 
 const config: CapacitorConfig = {
   appId: "com.starseedsquad.askjesus",
-  appName: "Ask Jesus AI",
+  appName: "Ask Jesus",
   webDir: "native/www",
   server: {
     url: serverUrl,

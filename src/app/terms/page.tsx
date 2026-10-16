@@ -5,7 +5,7 @@ import { unlimitedDailyCap } from "@/lib/config";
 export const metadata: Metadata = {
   title: "Terms — ASK JESUS",
   description:
-    "Terms for Ask Jesus AI, including the free daily messages and the iOS and Android day pass and subscription.",
+    "Terms for Ask AI Jesus, including the free daily messages and the iOS and Android day pass and subscription.",
 };
 
 export default function TermsPage() {
@@ -13,7 +13,7 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Terms"
-      lede="Ask Jesus AI is a conversation shaped by the Gospels and the Hebrew scriptures. These terms say what it is, and what an app purchase buys."
+      lede="Ask AI Jesus is a conversation shaped by the Gospels and the Hebrew scriptures. These terms say what it is, and what an app purchase buys."
     >
       <p>
         The voice is an AI. It is not Jesus, not scripture, and not a pastor, doctor, lawyer, or
@@ -55,7 +55,7 @@ export default function TermsPage() {
       <p>
         You keep the words on your device. Do not use the app to harm someone, to break the law,
         or to pretend an answer is scripture. The service can change or stop. These terms apply
-        to the website and to the apps named Ask Jesus AI.
+        to the website, to the App Store app Ask AI Jesus, and to the Android app.
       </p>
     </LegalPage>
   );
