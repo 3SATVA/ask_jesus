@@ -4,6 +4,11 @@ name: Android release
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/android-release.yml
 
 permissions:
   contents: read
@@ -34,14 +39,19 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Set up the Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android 36
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager --install "platforms;android-36" "build-tools;35.0.0"
-          sdkmanager --install "build-tools;36.0.0" || true
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | head -1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager was not found under $SDK_ROOT" >&2
+            exit 1
+          fi
+          timeout 90 yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "platforms;android-36" "build-tools;35.0.0"
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "build-tools;36.0.0" || true
 
       - name: Install dependencies
         run: npm ci
