@@ -73,7 +73,12 @@ type ProductPurchase = {
   purchaseState?: number;
   purchaseTimeMillis?: string;
   orderId?: string;
+  /** 0 = not consumed, 1 = consumed. Consuming also acknowledges the purchase. */
+  consumptionState?: number;
 };
+
+export const GOOGLE_PLAY_NOT_CONFIGURED =
+  "Google Play purchases are not configured on the server.";
 
 type SubscriptionLine = {
   productId?: string;
@@ -83,6 +88,7 @@ type SubscriptionLine = {
 type SubscriptionPurchase = {
   subscriptionState?: string;
   latestOrderId?: string;
+  acknowledgementState?: string;
   lineItems?: SubscriptionLine[];
 };
 
@@ -157,9 +163,54 @@ function playUrl(config: GooglePlayConfig, purchase: GooglePurchaseRequest) {
   return `${PLAY_API}/${packageName}/purchases/subscriptionsv2/tokens/${token}`;
 }
 
+function settleUrl(config: GooglePlayConfig, purchase: GooglePurchaseRequest) {
+  const packageName = encodeURIComponent(config.packageName);
+  const productId = encodeURIComponent(purchase.productId);
+  const token = encodeURIComponent(purchase.purchaseToken);
+  if (isDayPass(purchase.productId)) {
+    return `${PLAY_API}/${packageName}/purchases/products/${productId}/tokens/${token}:consume`;
+  }
+  return `${PLAY_API}/${packageName}/purchases/subscriptions/${productId}/tokens/${token}:acknowledge`;
+}
+
+function alreadySettled(productId: string, body: ProductPurchase & SubscriptionPurchase) {
+  if (isDayPass(productId)) return body.consumptionState === 1;
+  return body.acknowledgementState === "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED";
+}
+
+/** Consume a day pass, or acknowledge a subscription, before access is granted. */
+async function settleGooglePurchase(
+  config: GooglePlayConfig,
+  purchase: GooglePurchaseRequest,
+  body: ProductPurchase & SubscriptionPurchase,
+  accessToken: string,
+  fetchImpl: typeof fetch,
+) {
+  if (alreadySettled(purchase.productId, body)) return true;
+  const action = isDayPass(purchase.productId) ? "consume" : "acknowledge";
+  try {
+    const response = await fetchImpl(settleUrl(config, purchase), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    if (response.ok) return true;
+    console.error(`ASK JESUS Play ${action} failed:`, response.status);
+    return false;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+    console.error(`ASK JESUS Play ${action} failed:`, message);
+    return false;
+  }
+}
+
 /**
- * Confirm each purchase token with the Google Play Developer API.
- * The API response is what grants access.
+ * Confirm each purchase token with the Google Play Developer API, then
+ * consume or acknowledge it. The cookie is set only after that succeeds.
  */
 export async function confirmGooglePurchases(
   purchases: GooglePurchaseRequest[],
@@ -169,7 +220,9 @@ export async function confirmGooglePurchases(
     fetch?: typeof fetch;
     accessToken?: (config: GooglePlayConfig) => Promise<string>;
   },
-): Promise<{ ok: true; entitlement: GrantedEntitlement } | { ok: false }> {
+): Promise<
+  { ok: true; entitlement: GrantedEntitlement } | { ok: false; reason?: "not_settled" }
+> {
   const known = purchases.filter(
     (purchase) =>
       isKnownProduct(purchase.productId) &&
@@ -189,6 +242,7 @@ export async function confirmGooglePurchases(
 
   const fetchImpl = deps?.fetch ?? fetch;
   const grants: GrantedEntitlement[] = [];
+  let sawUnsettled = false;
   for (const purchase of known) {
     try {
       const response = await fetchImpl(playUrl(config, purchase), {
@@ -202,7 +256,13 @@ export async function confirmGooglePurchases(
       const grant = isDayPass(purchase.productId)
         ? entitlementForGoogleProduct(purchase.productId, body, now)
         : entitlementForGoogleSubscription(purchase.productId, body, now);
-      if (grant) grants.push(grant);
+      if (!grant) continue;
+      const settled = await settleGooglePurchase(config, purchase, body, token, fetchImpl);
+      if (!settled) {
+        sawUnsettled = true;
+        continue;
+      }
+      grants.push(grant);
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       console.error("ASK JESUS Play verification failed:", message);
@@ -210,6 +270,6 @@ export async function confirmGooglePurchases(
   }
 
   const entitlement = pickEntitlement(grants);
-  if (!entitlement) return { ok: false };
+  if (!entitlement) return sawUnsettled ? { ok: false, reason: "not_settled" } : { ok: false };
   return { ok: true, entitlement };
 }

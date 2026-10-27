@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { confirmSignedTransactions, readAppleVerifyOptions } from "@/lib/apple-iap";
-import { confirmGooglePurchases, readGooglePlayConfig } from "@/lib/google-play";
+import {
+  GOOGLE_PLAY_NOT_CONFIGURED,
+  confirmGooglePurchases,
+  readGooglePlayConfig,
+} from "@/lib/google-play";
 import { pickEntitlement, type GrantedEntitlement } from "@/lib/entitlement";
 import { isKnownProduct } from "@/lib/products";
 import {
@@ -151,9 +155,25 @@ export async function POST(request: NextRequest) {
 
   if (googlePurchases.length > 0) {
     const config = readGooglePlayConfig();
-    if (!config) return notReady();
+    if (!config) {
+      console.error(
+        "ASK JESUS Play: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is missing or is not a service account.",
+      );
+      return NextResponse.json(
+        { error: "not_configured", message: GOOGLE_PLAY_NOT_CONFIGURED },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+    }
     const result = await confirmGooglePurchases(googlePurchases, config, now);
-    if (!result.ok) return notConfirmed(request, secret, replace, now);
+    if (!result.ok) {
+      if (result.reason === "not_settled") {
+        return NextResponse.json(
+          { error: "not_confirmed", message: NOT_CONFIRMED },
+          { status: 502, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+      return notConfirmed(request, secret, replace, now);
+    }
     return grantResponse(grantToSeal(request, secret, result.entitlement, replace, now), secret, now);
   }
 

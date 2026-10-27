@@ -1,5 +1,6 @@
 ext {
     minSdkVersion = 24
+    // Google Play requires API 36 (Android 16) for new apps and updates as of August 31, 2026.
     compileSdkVersion = 36
     targetSdkVersion = 36
     androidxActivityVersion = '1.11.0'

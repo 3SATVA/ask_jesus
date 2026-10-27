@@ -29,37 +29,28 @@ export const MONTHLY_PRODUCT = {
 export const SUBSCRIPTION_GROUP = "Ask Jesus Unlimited";
 
 /**
- * Google Play product IDs must be 1–40 characters. The Apple IDs are longer,
- * so Play uses these shorter IDs for the same two products.
+ * Play Console base plan for the monthly subscription. The product id itself
+ * matches iOS. The base plan id is only used when the Android billing sheet
+ * selects an offer.
  */
-export const GOOGLE_DAY_PASS = {
-  id: "unlimited.today",
-  fallbackPrice: "$0.99",
-  title: "Unlimited today",
-  detail: "Unlimited messages until midnight UTC",
-} as const;
-
-export const GOOGLE_MONTHLY_PRODUCT = {
-  id: "unlimited.monthly",
-  basePlanId: "monthly",
-  fallbackPrice: "$6.99/month",
-  title: "Monthly",
-  detail: "Unlimited messages, renewing every month",
-} as const;
+export const GOOGLE_MONTHLY_BASE_PLAN_ID = "monthly";
 
 export const PRODUCT_IDS = [DAY_PASS.id, MONTHLY_PRODUCT.id] as const;
 
+/** Android and iOS sell the same two product ids. */
 export function catalogFor(store: StoreName) {
-  if (store === "google") return { day: GOOGLE_DAY_PASS, monthly: GOOGLE_MONTHLY_PRODUCT };
-  return { day: DAY_PASS, monthly: MONTHLY_PRODUCT };
+  return {
+    apple: { day: DAY_PASS, monthly: MONTHLY_PRODUCT },
+    google: { day: DAY_PASS, monthly: MONTHLY_PRODUCT },
+  }[store];
 }
 
 export function isDayPass(productId: string) {
-  return productId === DAY_PASS.id || productId === GOOGLE_DAY_PASS.id;
+  return productId === DAY_PASS.id;
 }
 
 export function isMonthlyProduct(productId: string) {
-  return productId === MONTHLY_PRODUCT.id || productId === GOOGLE_MONTHLY_PRODUCT.id;
+  return productId === MONTHLY_PRODUCT.id;
 }
 
 export function isKnownProduct(productId: string) {

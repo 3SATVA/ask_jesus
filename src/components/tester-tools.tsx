@@ -31,6 +31,7 @@ export function TesterTools({
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the sheet from storage when it opens
     setSaved(Boolean(readTesterCode()));
     setNote("");
     setCode("");
