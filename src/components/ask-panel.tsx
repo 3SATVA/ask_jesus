@@ -133,6 +133,7 @@ export function AskPanel({
 
   useEffect(() => {
     const stored = loadMessages();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is read once, after hydration
     setMessages(stored.length > 0 ? stored : [openingMessage()]);
     setHydrated(true);
   }, []);
@@ -220,6 +221,7 @@ export function AskPanel({
 
   useEffect(() => {
     if (nativeApp && freeLimitReached && !streaming) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the limit arrives from the ask response
       setPaywallReason("limit");
       setPaywallOpen(true);
     }

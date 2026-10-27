@@ -2,7 +2,8 @@
 
 import type { Product } from "@capgo/native-purchases";
 import {
-  GOOGLE_MONTHLY_PRODUCT,
+  GOOGLE_MONTHLY_BASE_PLAN_ID,
+  MONTHLY_PRODUCT,
   catalogFor,
   isDayPass,
   isKnownProduct,
@@ -45,8 +46,8 @@ function googleFrom(
     if (!purchase.productIdentifier || !purchase.purchaseToken) continue;
     if (purchase.purchaseState != null && purchase.purchaseState !== "1") continue;
     const productId =
-      purchase.productIdentifier === GOOGLE_MONTHLY_PRODUCT.basePlanId
-        ? GOOGLE_MONTHLY_PRODUCT.id
+      purchase.productIdentifier === GOOGLE_MONTHLY_BASE_PLAN_ID
+        ? MONTHLY_PRODUCT.id
         : purchase.productIdentifier;
     if (!isKnownProduct(productId) || seen.has(purchase.purchaseToken)) continue;
     seen.add(purchase.purchaseToken);
@@ -119,6 +120,15 @@ async function settle(store: StoreName, productId: string, token: string) {
   await NativePurchases.acknowledgePurchase({ purchaseToken: token });
 }
 
+/** The server already consumed or acknowledged the token. A second local call can fail. */
+async function finishGoogle(productId: string, token: string) {
+  try {
+    await settle("google", productId, token);
+  } catch {
+    // Leave the unlock that the server already sealed.
+  }
+}
+
 export async function purchaseProduct(productId: string) {
   if (!isKnownProduct(productId)) throw new Error("That purchase is not available.");
   const store = (await nativeStore()) ?? "apple";
@@ -135,9 +145,13 @@ export async function purchaseProduct(productId: string) {
       productType: PURCHASE_TYPE.SUBS,
     });
     const offer =
-      products.find((product) => product.identifier === GOOGLE_MONTHLY_PRODUCT.basePlanId) ??
+      products.find((product) => product.identifier === GOOGLE_MONTHLY_BASE_PLAN_ID) ??
+      products.find((product) => product.planIdentifier === productId) ??
       products[0];
-    planIdentifier = offer?.identifier || GOOGLE_MONTHLY_PRODUCT.basePlanId;
+    planIdentifier =
+      offer?.identifier && offer.identifier !== productId
+        ? offer.identifier
+        : GOOGLE_MONTHLY_BASE_PLAN_ID;
     offerToken = offer?.offerToken;
   }
 
@@ -160,7 +174,7 @@ export async function purchaseProduct(productId: string) {
       googlePurchases: [{ productId, purchaseToken: transaction.purchaseToken }],
       replace: false,
     });
-    await settle("google", productId, transaction.purchaseToken);
+    await finishGoogle(productId, transaction.purchaseToken);
     return verified;
   }
 
@@ -197,7 +211,7 @@ export async function restorePurchases() {
     }
     const verified = await postVerify({ googlePurchases, replace: true });
     for (const purchase of googlePurchases) {
-      await settle("google", purchase.productId, purchase.purchaseToken);
+      await finishGoogle(purchase.productId, purchase.purchaseToken);
     }
     return verified;
   }
@@ -235,7 +249,7 @@ export async function refreshNativeEntitlement(unlockKind: UnlockKind | null) {
     if (googlePurchases.length > 0) {
       await postVerify({ googlePurchases, replace: false });
       for (const purchase of googlePurchases) {
-        await settle("google", purchase.productId, purchase.purchaseToken);
+        await finishGoogle(purchase.productId, purchase.purchaseToken);
       }
       return;
     }
