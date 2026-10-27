@@ -37,14 +37,12 @@ Terms of use: https://ask-jesus-lake.vercel.app/terms
 
 ## Products
 
-Create these in Play Console → Monetize → Products, after the first app bundle is accepted. Product IDs cannot be changed later. Android uses the same product IDs as iOS.
+Create these in Play Console → Monetize → Products, after the first app bundle is accepted. Product IDs cannot be changed later. Google Play product IDs are 1–40 characters. The App Store IDs `com.starseedsquad.askjesus.unlimited.today` (42) and `com.starseedsquad.askjesus.unlimited.monthly` (44) are too long, so Play rejects them. Android uses the shorter IDs below. iOS keeps the long IDs. The website the shell loads chooses which ID to buy. Those strings are not compiled into the Android App Bundle.
 
 | Product ID | Type | Price | Base plan | What it unlocks |
 | --- | --- | --- | --- | --- |
-| `com.starseedsquad.askjesus.unlimited.today` | One-time product, consumable | $0.99 | — | Messages until midnight UTC on the day it is bought, up to 300 that day |
-| `com.starseedsquad.askjesus.unlimited.monthly` | Subscription | $6.99 | `monthly`, auto-renewing, billed every month | Messages until the period ends, up to 300 each UTC day |
-
-Play Console documents a maximum of 40 characters for a subscription product ID. These IDs are 42 and 44 characters because they match the App Store. If the form rejects either string, that product cannot be saved under the iOS id.
+| `unlimited.today` | One-time product, consumable | $0.99 | — | Messages until midnight UTC on the day it is bought, up to 300 that day |
+| `unlimited.monthly` | Subscription | $6.99 | `monthly`, auto-renewing, billed every month | Messages until the period ends, up to 300 each UTC day |
 
 Name for the one-time product: `Unlimited today`
 Description: `Messages until midnight UTC on the day you buy it, up to 300 that day.`
@@ -56,7 +54,7 @@ Billing period: 1 month
 Renewal: auto-renewing
 Grace period: 7 days, if the console offers it
 
-The server consumes `com.starseedsquad.askjesus.unlimited.today` after Google confirms it, so it can be bought again on another day. The server acknowledges the subscription the same way, and only then sets the unlock cookie. Family sharing stays off.
+The server consumes `unlimited.today` after Google confirms it, so it can be bought again on another day. The server acknowledges `unlimited.monthly` the same way, and only then sets the unlock cookie. Family sharing stays off.
 
 A day is the same UTC day the free limit uses. Unlimited today bought at 11pm UTC lasts until midnight UTC.
 
@@ -116,7 +114,7 @@ On macOS, `base64` has no `-w`. Use `base64 -i ask-jesus-upload.jks | tr -d '\n'
 5. Store listing: paste the short description and full description from this file. Add a 1024×500 feature graphic, a 512×512 app icon, and phone screenshots. The adaptive icon in the project is the portrait from `store-assets/ask-jesus-ios-1024.png`.
 6. Google Cloud → enable the Google Play Android Developer API. Create a service account and download its JSON. In Play Console → Users and permissions, invite that service account email. Grant “Manage orders and subscriptions” so the server can verify purchases, and “Release to testing tracks” so the workflow can upload. It can take a day for a new permission to work.
 7. Put the JSON in the server variable `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and in the GitHub secret of the same name. Also set `UNLOCK_COOKIE_SECRET` on the server.
-8. Monetize → Products: create `com.starseedsquad.askjesus.unlimited.today` at $0.99 (consumable) and the subscription `com.starseedsquad.askjesus.unlimited.monthly` with base plan `monthly` at $6.99. Activate both. Do this after the first upload, because Play will not save products for an app it has not received. If the console rejects an id for length, stop and say so. Those strings are the same ids as iOS, and Play’s subscription id field is documented at 40 characters.
+8. Monetize → Products: create `unlimited.today` at $0.99 (consumable) and the subscription `unlimited.monthly` with base plan `monthly` at $6.99. Activate both. Do this after the first upload, because Play will not save products for an app it has not received. iOS keeps `com.starseedsquad.askjesus.unlimited.today` and `com.starseedsquad.askjesus.unlimited.monthly`. Play rejects those because they are longer than 40 characters.
 9. Deploy this website first, so the shell loads the paywall and the privacy and terms pages. Set `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` on Vercel before Android purchases can be confirmed. iOS does not use that variable.
 10. The first Android App Bundle often has to be uploaded by a person in Play Console → Internal testing, because the Play API rejects the first upload. Download `ask-jesus-release-aab` from the workflow artifacts and upload that bundle by hand. After Play accepts it, put the service account JSON in the GitHub secret and later runs can upload to internal testing.
 11. On GitHub, open Actions → Android release → Run workflow, on `main`. The keystore secrets have to exist. The Play upload is skipped while its secret is empty.

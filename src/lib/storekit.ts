@@ -2,8 +2,7 @@
 
 import type { Product } from "@capgo/native-purchases";
 import {
-  GOOGLE_MONTHLY_BASE_PLAN_ID,
-  MONTHLY_PRODUCT,
+  GOOGLE_MONTHLY_PRODUCT,
   catalogFor,
   isDayPass,
   isKnownProduct,
@@ -46,8 +45,8 @@ function googleFrom(
     if (!purchase.productIdentifier || !purchase.purchaseToken) continue;
     if (purchase.purchaseState != null && purchase.purchaseState !== "1") continue;
     const productId =
-      purchase.productIdentifier === GOOGLE_MONTHLY_BASE_PLAN_ID
-        ? MONTHLY_PRODUCT.id
+      purchase.productIdentifier === GOOGLE_MONTHLY_PRODUCT.basePlanId
+        ? GOOGLE_MONTHLY_PRODUCT.id
         : purchase.productIdentifier;
     if (!isKnownProduct(productId) || seen.has(purchase.purchaseToken)) continue;
     seen.add(purchase.purchaseToken);
@@ -145,13 +144,9 @@ export async function purchaseProduct(productId: string) {
       productType: PURCHASE_TYPE.SUBS,
     });
     const offer =
-      products.find((product) => product.identifier === GOOGLE_MONTHLY_BASE_PLAN_ID) ??
-      products.find((product) => product.planIdentifier === productId) ??
+      products.find((product) => product.identifier === GOOGLE_MONTHLY_PRODUCT.basePlanId) ??
       products[0];
-    planIdentifier =
-      offer?.identifier && offer.identifier !== productId
-        ? offer.identifier
-        : GOOGLE_MONTHLY_BASE_PLAN_ID;
+    planIdentifier = offer?.identifier || GOOGLE_MONTHLY_PRODUCT.basePlanId;
     offerToken = offer?.offerToken;
   }
 

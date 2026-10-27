@@ -8,7 +8,15 @@ import {
   readGooglePlayConfig,
   type GooglePlayConfig,
 } from "./google-play";
-import { DAY_PASS, GOOGLE_MONTHLY_BASE_PLAN_ID, MONTHLY_PRODUCT, catalogFor } from "./products";
+import {
+  DAY_PASS,
+  GOOGLE_DAY_PASS,
+  GOOGLE_MONTHLY_PRODUCT,
+  MONTHLY_PRODUCT,
+  catalogFor,
+  isDayPass,
+  isMonthlyProduct,
+} from "./products";
 
 const NOW = new Date("2026-10-16T18:00:00.000Z");
 const ACCOUNT = {
@@ -18,14 +26,22 @@ const ACCOUNT = {
 };
 
 describe("Google product IDs", () => {
-  it("uses the same product ids as iOS", () => {
+  it("keeps the long Apple ids and uses short Play ids", () => {
     const google = catalogFor("google");
     const apple = catalogFor("apple");
-    assert.equal(google.day.id, apple.day.id);
-    assert.equal(google.monthly.id, apple.monthly.id);
-    assert.equal(google.day.id, "com.starseedsquad.askjesus.unlimited.today");
-    assert.equal(google.monthly.id, "com.starseedsquad.askjesus.unlimited.monthly");
-    assert.equal(GOOGLE_MONTHLY_BASE_PLAN_ID, "monthly");
+    assert.equal(apple.day.id, DAY_PASS.id);
+    assert.equal(apple.monthly.id, MONTHLY_PRODUCT.id);
+    assert.equal(apple.day.id, "com.starseedsquad.askjesus.unlimited.today");
+    assert.equal(apple.monthly.id, "com.starseedsquad.askjesus.unlimited.monthly");
+    assert.equal(google.day.id, "unlimited.today");
+    assert.equal(google.monthly.id, "unlimited.monthly");
+    assert.ok(google.day.id.length <= 40);
+    assert.ok(google.monthly.id.length <= 40);
+    assert.equal(GOOGLE_MONTHLY_PRODUCT.basePlanId, "monthly");
+    assert.equal(isDayPass(DAY_PASS.id), true);
+    assert.equal(isDayPass(GOOGLE_DAY_PASS.id), true);
+    assert.equal(isMonthlyProduct(MONTHLY_PRODUCT.id), true);
+    assert.equal(isMonthlyProduct(GOOGLE_MONTHLY_PRODUCT.id), true);
   });
 });
 
@@ -56,7 +72,7 @@ describe("readGooglePlayConfig", () => {
 describe("entitlementForGoogleProduct", () => {
   it("unlocks the rest of the UTC day and rejects canceled, pending, and old purchases", () => {
     const grant = entitlementForGoogleProduct(
-      DAY_PASS.id,
+      GOOGLE_DAY_PASS.id,
       {
         purchaseState: 0,
         purchaseTimeMillis: String(Date.parse("2026-10-16T01:00:00.000Z")),
@@ -68,7 +84,7 @@ describe("entitlementForGoogleProduct", () => {
     assert.equal(grant?.until.toISOString(), "2026-10-16T23:59:59.999Z");
     assert.equal(
       entitlementForGoogleProduct(
-        DAY_PASS.id,
+        GOOGLE_DAY_PASS.id,
         { purchaseState: 1, purchaseTimeMillis: String(NOW.getTime()), orderId: "GPA.1" },
         NOW,
       ),
@@ -76,7 +92,7 @@ describe("entitlementForGoogleProduct", () => {
     );
     assert.equal(
       entitlementForGoogleProduct(
-        DAY_PASS.id,
+        GOOGLE_DAY_PASS.id,
         { purchaseState: 2, purchaseTimeMillis: String(NOW.getTime()), orderId: "GPA.1" },
         NOW,
       ),
@@ -84,7 +100,7 @@ describe("entitlementForGoogleProduct", () => {
     );
     assert.equal(
       entitlementForGoogleProduct(
-        DAY_PASS.id,
+        GOOGLE_DAY_PASS.id,
         {
           purchaseState: 0,
           purchaseTimeMillis: String(Date.parse("2026-10-15T12:00:00.000Z")),
@@ -99,7 +115,7 @@ describe("entitlementForGoogleProduct", () => {
 
 describe("entitlementForGoogleSubscription", () => {
   const line = {
-    productId: MONTHLY_PRODUCT.id,
+    productId: GOOGLE_MONTHLY_PRODUCT.id,
     expiryTime: "2026-11-16T18:00:00.000Z",
   };
 
@@ -110,7 +126,7 @@ describe("entitlementForGoogleSubscription", () => {
       "SUBSCRIPTION_STATE_IN_GRACE_PERIOD",
     ]) {
       const grant = entitlementForGoogleSubscription(
-        MONTHLY_PRODUCT.id,
+        GOOGLE_MONTHLY_PRODUCT.id,
         { subscriptionState: state, latestOrderId: "GPA.sub", lineItems: [line] },
         NOW,
       );
@@ -128,7 +144,7 @@ describe("entitlementForGoogleSubscription", () => {
     ]) {
       assert.equal(
         entitlementForGoogleSubscription(
-          MONTHLY_PRODUCT.id,
+          GOOGLE_MONTHLY_PRODUCT.id,
           { subscriptionState: state, latestOrderId: "GPA.sub", lineItems: [line] },
           NOW,
         ),
@@ -137,7 +153,7 @@ describe("entitlementForGoogleSubscription", () => {
     }
     assert.equal(
       entitlementForGoogleSubscription(
-        MONTHLY_PRODUCT.id,
+        GOOGLE_MONTHLY_PRODUCT.id,
         {
           subscriptionState: "SUBSCRIPTION_STATE_ACTIVE",
           latestOrderId: "GPA.sub",
@@ -162,7 +178,7 @@ describe("confirmGooglePurchases", () => {
     const result = await confirmGooglePurchases(
       [
         { productId: "not-a-product", purchaseToken: "tok" },
-        { productId: DAY_PASS.id, purchaseToken: "day-token" },
+        { productId: GOOGLE_DAY_PASS.id, purchaseToken: "day-token" },
       ],
       config,
       NOW,
@@ -185,17 +201,17 @@ describe("confirmGooglePurchases", () => {
       },
     );
     assert.equal(result.ok, true);
-    if (result.ok) assert.equal(result.entitlement.productId, DAY_PASS.id);
+    if (result.ok) assert.equal(result.entitlement.productId, GOOGLE_DAY_PASS.id);
     assert.equal(calls.length, 2);
-    assert.match(calls[0], /GET .*purchases\/products\/com\.starseedsquad\.askjesus\.unlimited\.today\/tokens\/day-token$/);
-    assert.match(calls[1], /POST .*purchases\/products\/com\.starseedsquad\.askjesus\.unlimited\.today\/tokens\/day-token:consume$/);
+    assert.match(calls[0], /GET .*purchases\/products\/unlimited\.today\/tokens\/day-token$/);
+    assert.match(calls[1], /POST .*purchases\/products\/unlimited\.today\/tokens\/day-token:consume$/);
     assert.match(calls[0], /com\.starseedsquad\.askjesus/);
   });
 
   it("acknowledges an active subscription before granting it", async () => {
     const calls: string[] = [];
     const result = await confirmGooglePurchases(
-      [{ productId: MONTHLY_PRODUCT.id, purchaseToken: "sub-token" }],
+      [{ productId: GOOGLE_MONTHLY_PRODUCT.id, purchaseToken: "sub-token" }],
       config,
       NOW,
       {
@@ -209,7 +225,7 @@ describe("confirmGooglePurchases", () => {
               subscriptionState: "SUBSCRIPTION_STATE_ACTIVE",
               acknowledgementState: "ACKNOWLEDGEMENT_STATE_PENDING",
               latestOrderId: "GPA.sub",
-              lineItems: [{ productId: MONTHLY_PRODUCT.id, expiryTime: "2026-11-16T18:00:00.000Z" }],
+              lineItems: [{ productId: GOOGLE_MONTHLY_PRODUCT.id, expiryTime: "2026-11-16T18:00:00.000Z" }],
             }),
             { status: 200 },
           );
@@ -220,14 +236,14 @@ describe("confirmGooglePurchases", () => {
     if (result.ok) assert.equal(result.entitlement.kind, "subscription");
     assert.match(
       calls[1],
-      /POST .*purchases\/subscriptions\/com\.starseedsquad\.askjesus\.unlimited\.monthly\/tokens\/sub-token:acknowledge$/,
+      /POST .*purchases\/subscriptions\/unlimited\.monthly\/tokens\/sub-token:acknowledge$/,
     );
   });
 
   it("does not call consume again when the day pass is already consumed", async () => {
     const calls: string[] = [];
     const result = await confirmGooglePurchases(
-      [{ productId: DAY_PASS.id, purchaseToken: "day-token" }],
+      [{ productId: GOOGLE_DAY_PASS.id, purchaseToken: "day-token" }],
       config,
       NOW,
       {
@@ -252,7 +268,7 @@ describe("confirmGooglePurchases", () => {
 
   it("does not grant when Google rejects the token", async () => {
     const result = await confirmGooglePurchases(
-      [{ productId: MONTHLY_PRODUCT.id, purchaseToken: "sub-token" }],
+      [{ productId: GOOGLE_MONTHLY_PRODUCT.id, purchaseToken: "sub-token" }],
       config,
       NOW,
       {
@@ -265,7 +281,7 @@ describe("confirmGooglePurchases", () => {
 
   it("does not grant when the purchase cannot be consumed", async () => {
     const result = await confirmGooglePurchases(
-      [{ productId: DAY_PASS.id, purchaseToken: "day-token" }],
+      [{ productId: GOOGLE_DAY_PASS.id, purchaseToken: "day-token" }],
       config,
       NOW,
       {

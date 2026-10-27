@@ -117,6 +117,8 @@ export async function POST(request: NextRequest) {
             typeof item === "object" &&
             typeof (item as { productId?: unknown }).productId === "string" &&
             typeof (item as { purchaseToken?: unknown }).purchaseToken === "string" &&
+            // Accepts the short Play ids (unlimited.today, unlimited.monthly)
+            // and the long App Store ids. Play rejects the long ones.
             isKnownProduct((item as { productId: string }).productId) &&
             (item as { purchaseToken: string }).purchaseToken.length > 0 &&
             (item as { purchaseToken: string }).purchaseToken.length <= 4096,
